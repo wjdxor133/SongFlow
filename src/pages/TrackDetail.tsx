@@ -27,7 +27,6 @@ export function TrackDetail() {
   const track = useAlbumStore((s) => s.tracks.find((t) => t.id === trackId));
   const updateTrack = useAlbumStore((s) => s.updateTrack);
 
-  const [editing, setEditing] = useState(false);
   const [editTitle, setEditTitle] = useState("");
   const [editGenre, setEditGenre] = useState("");
   const [editBpm, setEditBpm] = useState("");
@@ -77,7 +76,6 @@ export function TrackDetail() {
       concept: editConcept.trim() || undefined,
       lyrics: editLyrics.trim() || undefined,
     });
-    setEditing(false);
   }
 
   const agentHistory = track.agentRequests
@@ -103,131 +101,72 @@ export function TrackDetail() {
       </div>
 
       {/* Track info */}
-      {editing ? (
-        <form onSubmit={handleSaveEdit} className="flex flex-col gap-3">
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium">Title</label>
+      <form onSubmit={handleSaveEdit} className="flex flex-col gap-3">
+        <div className="flex items-center gap-3">
+          <input
+            className="flex-1 bg-transparent text-2xl font-semibold tracking-tight outline-none border-b border-transparent focus:border-border transition-colors"
+            value={editTitle}
+            onChange={(e) => setEditTitle(e.target.value)}
+            placeholder="Track title"
+            required
+          />
+        </div>
+        <div className="grid grid-cols-3 gap-3">
+          <div className="space-y-1">
+            <label className="text-xs text-muted-foreground">Genre</label>
             <input
               className={inputClass}
-              value={editTitle}
-              onChange={(e) => setEditTitle(e.target.value)}
-              placeholder="Track title"
-              required
-              autoFocus
+              value={editGenre}
+              onChange={(e) => setEditGenre(e.target.value)}
+              placeholder="Optional"
             />
           </div>
-          <div className="grid grid-cols-3 gap-3">
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium">Genre</label>
-              <input
-                className={inputClass}
-                value={editGenre}
-                onChange={(e) => setEditGenre(e.target.value)}
-                placeholder="Optional"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium">BPM</label>
-              <input
-                className={inputClass}
-                value={editBpm}
-                onChange={(e) => setEditBpm(e.target.value)}
-                placeholder="120"
-                type="number"
-                min={1}
-                max={300}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium">Key</label>
-              <input
-                className={inputClass}
-                value={editKey}
-                onChange={(e) => setEditKey(e.target.value)}
-                placeholder="C major"
-              />
-            </div>
-          </div>
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium">Concept</label>
-            <textarea
-              className={`${inputClass} resize-none`}
-              value={editConcept}
-              onChange={(e) => setEditConcept(e.target.value)}
-              placeholder="What's this track about?"
-              rows={2}
+          <div className="space-y-1">
+            <label className="text-xs text-muted-foreground">BPM</label>
+            <input
+              className={inputClass}
+              value={editBpm}
+              onChange={(e) => setEditBpm(e.target.value)}
+              placeholder="120"
+              type="number"
+              min={1}
+              max={300}
             />
           </div>
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium">Lyrics</label>
-            <textarea
-              className={`${inputClass} resize-none`}
-              value={editLyrics}
-              onChange={(e) => setEditLyrics(e.target.value)}
-              placeholder="Lyrics"
-              rows={5}
+          <div className="space-y-1">
+            <label className="text-xs text-muted-foreground">Key</label>
+            <input
+              className={inputClass}
+              value={editKey}
+              onChange={(e) => setEditKey(e.target.value)}
+              placeholder="C major"
             />
           </div>
-          <div className="flex gap-2">
-            <Button type="submit" size="sm">
-              Save
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setEditing(false)}
-            >
-              Cancel
-            </Button>
-          </div>
-        </form>
-      ) : (
-        <div>
-          <div className="flex items-start gap-3">
-            <h1 className="text-2xl font-semibold tracking-tight flex-1">
-              {track.title}
-            </h1>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setEditing(true)}
-            >
-              Edit
-            </Button>
-          </div>
-          {track.concept && (
-            <p className="mt-1 text-sm text-muted-foreground">{track.concept}</p>
-          )}
-          <div className="mt-2 flex flex-wrap gap-1.5">
-            {(track.genre ?? album?.genre) && (
-              <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium">
-                {track.genre ?? album?.genre}
-              </span>
-            )}
-            {track.bpm && (
-              <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium">
-                {track.bpm} BPM
-              </span>
-            )}
-            {track.key && (
-              <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium">
-                {track.key}
-              </span>
-            )}
-          </div>
-          {track.lyrics && (
-            <div className="mt-4">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
-                Lyrics
-              </p>
-              <pre className="whitespace-pre-wrap text-sm font-sans text-foreground rounded-lg border bg-muted/20 p-3">
-                {track.lyrics}
-              </pre>
-            </div>
-          )}
         </div>
-      )}
+        <div className="space-y-1">
+          <label className="text-xs text-muted-foreground">Concept</label>
+          <textarea
+            className={`${inputClass} resize-none`}
+            value={editConcept}
+            onChange={(e) => setEditConcept(e.target.value)}
+            placeholder="What's this track about?"
+            rows={2}
+          />
+        </div>
+        <div className="space-y-1">
+          <label className="text-xs text-muted-foreground">Lyrics</label>
+          <textarea
+            className={`${inputClass} resize-y`}
+            value={editLyrics}
+            onChange={(e) => setEditLyrics(e.target.value)}
+            placeholder="가사를 입력하세요..."
+            rows={6}
+          />
+        </div>
+        <div>
+          <Button type="submit" size="sm">Save</Button>
+        </div>
+      </form>
 
       {/* Agent history */}
       {agentHistory.length > 0 && (

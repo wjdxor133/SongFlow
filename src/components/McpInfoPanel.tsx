@@ -1,45 +1,56 @@
+import { useState } from "react";
+import { ChevronDown, ChevronRight } from "lucide-react";
+
 const MCP_CONFIG_SNIPPET = `{
   "mcpServers": {
     "songflow": {
       "command": "node",
-      "args": ["<path-to-songflow>/mcp-server/dist/index.js"],
-      "env": {}
+      "args": ["<path-to-songflow>/mcp-server/dist/server.js"]
     }
   }
 }`;
 
 export function McpInfoPanel() {
+  const [open, setOpen] = useState(false);
+
   return (
-    <div className="rounded-lg border bg-muted/20 p-4 flex flex-col gap-3">
-      <div>
-        <h3 className="text-sm font-semibold">MCP Server Configuration</h3>
-        <p className="mt-1 text-xs text-muted-foreground">
-          The SongFlow MCP server exposes your album and track data to AI agents via the Model Context Protocol.
-        </p>
-      </div>
+    <div className="rounded-lg border bg-muted/10">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center justify-between p-3 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+      >
+        <span>MCP 서버 연결 가이드</span>
+        {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+      </button>
 
-      <div className="flex flex-col gap-1">
-        <p className="text-xs font-medium">Data file location</p>
-        <p className="text-xs text-muted-foreground">
-          macOS: <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">~/Library/Application Support/com.songflow.app/songflow-data.json</code>
-        </p>
-        <p className="text-xs text-muted-foreground">
-          Linux: <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">~/.local/share/com.songflow.app/songflow-data.json</code>
-        </p>
-        <p className="text-xs text-muted-foreground">
-          Windows: <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">%APPDATA%\com.songflow.app\songflow-data.json</code>
-        </p>
-      </div>
+      {open && (
+        <div className="px-3 pb-4 flex flex-col gap-3 border-t">
+          <p className="mt-3 text-xs text-muted-foreground">
+            Claude Code나 Cursor에서 SongFlow 데이터에 직접 접근할 수 있어요.
+          </p>
 
-      <div className="flex flex-col gap-1">
-        <p className="text-xs font-medium">Claude Code MCP config (<code className="font-mono">.mcp.json</code>)</p>
-        <pre className="rounded-md border bg-background p-3 text-xs font-mono whitespace-pre overflow-auto">
-          {MCP_CONFIG_SNIPPET}
-        </pre>
-        <p className="text-xs text-muted-foreground">
-          See <code className="font-mono">mcp-server/README.md</code> for full setup instructions.
-        </p>
-      </div>
+          <div className="flex flex-col gap-1">
+            <p className="text-xs font-medium">1. MCP 서버 빌드</p>
+            <pre className="rounded-md border bg-background p-2 text-xs font-mono">
+              cd mcp-server && npm install && npm run build
+            </pre>
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <p className="text-xs font-medium">2. Claude Code에 등록</p>
+            <pre className="rounded-md border bg-background p-2 text-xs font-mono whitespace-pre overflow-auto">
+              {MCP_CONFIG_SNIPPET}
+            </pre>
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <p className="text-xs font-medium">데이터 파일 위치</p>
+            <p className="text-xs text-muted-foreground font-mono">
+              macOS: ~/Library/Application Support/com.wjdxor133.songflow/songflow-data.json
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
