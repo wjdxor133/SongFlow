@@ -1,17 +1,16 @@
-import type { SongProject } from "../types";
-
-const STORAGE_KEY = "songflow_projects";
+// @deprecated This module is no longer used. Data is now stored via fileStore.ts.
+// Kept as a stub so legacy imports in useProjectStore don't break during cleanup phase.
+import type { SongProject } from "../types/project";
 
 export function loadProjects(): SongProject[] {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    return JSON.parse(raw) as SongProject[];
+    const raw = localStorage.getItem("songflow_projects");
+    return raw ? (JSON.parse(raw) as SongProject[]) : [];
   } catch {
     return [];
   }
 }
 
 export function saveProjects(projects: SongProject[]): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
+  localStorage.setItem("songflow_projects", JSON.stringify(projects));
 }

@@ -1,18 +1,17 @@
-import type { AgentRequest, AgentTask } from "../types";
-import type { SongProject } from "../types";
+import type { AgentRequest, AgentTask, Track, Album } from "../types";
 
 type PromptResult = {
   instruction: string;
   outputSchema: string;
 };
 
-export function buildPrompt(task: AgentTask, project: SongProject): PromptResult {
+export function buildPrompt(task: AgentTask, track: Track, album: Album): PromptResult {
   const base = [
-    `Project: ${project.title}`,
-    `Genre: ${project.genre}`,
-    `Moods: ${project.moods.join(", ")}`,
-    `Target Vibe: ${project.targetVibe}`,
-    project.description ? `Description: ${project.description}` : "",
+    `Track: ${track.title}`,
+    `Album: ${album.title}`,
+    `Genre: ${track.genre ?? album.genre}`,
+    track.concept ? `Concept: ${track.concept}` : "",
+    album.concept ? `Album Concept: ${album.concept}` : "",
   ]
     .filter(Boolean)
     .join("\n");
@@ -103,20 +102,21 @@ export function buildPrompt(task: AgentTask, project: SongProject): PromptResult
   }
 }
 
-export function buildCopyablePrompt(task: AgentTask, project: SongProject): string {
-  const { instruction, outputSchema } = buildPrompt(task, project);
+export function buildCopyablePrompt(task: AgentTask, track: Track, album: Album): string {
+  const { instruction, outputSchema } = buildPrompt(task, track, album);
   return `${instruction}\n\n${outputSchema}`;
 }
 
 export function buildAgentRequestPayload(
   task: AgentTask,
-  project: SongProject
+  track: Track,
+  album: Album
 ): Omit<AgentRequest, "id" | "createdAt"> {
-  const { instruction, outputSchema } = buildPrompt(task, project);
+  const { instruction, outputSchema } = buildPrompt(task, track, album);
   return {
-    provider: project.agentProvider,
+    provider: "manual",
     task,
-    input: { projectId: project.id, title: project.title },
+    input: { albumId: album.id, trackId: track.id, title: track.title },
     outputSchema,
     instruction,
   };

@@ -1,3 +1,4 @@
+// @deprecated Use useAlbumStore instead
 import { create } from "zustand";
 import type {
   AgentRequest,

@@ -35,7 +35,10 @@ export function ManualAgentPanel({ project }: ManualAgentPanelProps) {
 
   const { addAgentRequest, addAgentResponse } = useProjectStore();
 
-  const promptText = buildCopyablePrompt(selectedTask, project);
+  // @deprecated: ManualAgentPanel uses legacy SongProject shape; shim album for new prompts API
+  const legacyAlbum = { id: project.id, title: project.title, genre: project.genre, concept: project.description, createdAt: project.createdAt, updatedAt: project.updatedAt };
+  const legacyTrack = { ...project, albumId: project.id } as Parameters<typeof buildCopyablePrompt>[1];
+  const promptText = buildCopyablePrompt(selectedTask, legacyTrack, legacyAlbum);
 
   async function handleCopy() {
     try {
@@ -50,7 +53,7 @@ export function ManualAgentPanel({ project }: ManualAgentPanelProps) {
   function handleSaveResponse() {
     if (!responseText.trim()) return;
 
-    const requestPayload = buildAgentRequestPayload(selectedTask, project);
+    const requestPayload = buildAgentRequestPayload(selectedTask, legacyTrack, legacyAlbum);
     const requestId = crypto.randomUUID();
     const now = new Date().toISOString();
 

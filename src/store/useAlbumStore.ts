@@ -11,24 +11,19 @@ import type {
 } from "../lib/types/agent";
 import type { GeneratedPrompt, ResultFeedback, PromptRefinement } from "../lib/types/prompt";
 import type { SunoResult } from "../lib/types/suno";
-import type { ReferenceSong, ReferenceAnalysis } from "../lib/types/reference";
-import type { ChordProgression, GroovePattern, SoundKeywordGroup } from "../lib/types/music";
 import {
   loadData,
-  saveData,
   saveDataCAS,
   VersionConflictError,
 } from "../lib/storage/fileStore";
 import { migrateLegacy } from "../lib/storage/migrate";
 import {
-  emptyStorage,
   createAlbum as dmCreateAlbum,
   updateAlbum as dmUpdateAlbum,
   deleteAlbum as dmDeleteAlbum,
   createTrack as dmCreateTrack,
   updateTrack as dmUpdateTrack,
   deleteTrack as dmDeleteTrack,
-  getAlbumTracks as dmGetAlbumTracks,
   getTrackEffectiveGenre as dmGetTrackEffectiveGenre,
   appendToTrack,
 } from "../lib/core/dataModel";
@@ -109,7 +104,6 @@ type AlbumStore = {
 };
 
 async function withCAS(
-  get: () => { albums: Album[]; tracks: Track[] },
   set: (fn: (s: AlbumStore) => Partial<AlbumStore>) => void,
   transform: (data: StorageData) => StorageData
 ): Promise<void> {
@@ -143,7 +137,7 @@ export const useAlbumStore = create<AlbumStore>((set, get) => ({
 
   async createAlbum(input) {
     let created!: Album;
-    await withCAS(get, set, (data) => {
+    await withCAS(set, (data) => {
       const { data: next, album } = dmCreateAlbum(data, input);
       created = album;
       return next;
@@ -152,11 +146,11 @@ export const useAlbumStore = create<AlbumStore>((set, get) => ({
   },
 
   async updateAlbum(id, patch) {
-    await withCAS(get, set, (data) => dmUpdateAlbum(data, id, patch));
+    await withCAS(set, (data) => dmUpdateAlbum(data, id, patch));
   },
 
   async deleteAlbum(id) {
-    await withCAS(get, set, (data) => dmDeleteAlbum(data, id));
+    await withCAS(set, (data) => dmDeleteAlbum(data, id));
   },
 
   getAlbumById(id) {
@@ -165,7 +159,7 @@ export const useAlbumStore = create<AlbumStore>((set, get) => ({
 
   async createTrack(albumId, input) {
     let created!: Track;
-    await withCAS(get, set, (data) => {
+    await withCAS(set, (data) => {
       const { data: next, track } = dmCreateTrack(data, albumId, input);
       created = track;
       return next;
@@ -174,11 +168,11 @@ export const useAlbumStore = create<AlbumStore>((set, get) => ({
   },
 
   async updateTrack(id, patch) {
-    await withCAS(get, set, (data) => dmUpdateTrack(data, id, patch));
+    await withCAS(set, (data) => dmUpdateTrack(data, id, patch));
   },
 
   async deleteTrack(id) {
-    await withCAS(get, set, (data) => dmDeleteTrack(data, id));
+    await withCAS(set, (data) => dmDeleteTrack(data, id));
   },
 
   getTracksByAlbum(albumId) {
@@ -198,43 +192,43 @@ export const useAlbumStore = create<AlbumStore>((set, get) => ({
   },
 
   async addAgentRequest(trackId, request) {
-    await withCAS(get, set, (data) =>
+    await withCAS(set, (data) =>
       appendToTrack(data, trackId, "agentRequests", request)
     );
   },
 
   async addAgentResponse(trackId, response) {
-    await withCAS(get, set, (data) =>
+    await withCAS(set, (data) =>
       appendToTrack(data, trackId, "agentResponses", response)
     );
   },
 
   async addPrompt(trackId, prompt) {
-    await withCAS(get, set, (data) =>
+    await withCAS(set, (data) =>
       appendToTrack(data, trackId, "prompts", prompt)
     );
   },
 
   async addSunoResult(trackId, result) {
-    await withCAS(get, set, (data) =>
+    await withCAS(set, (data) =>
       appendToTrack(data, trackId, "sunoResults", result)
     );
   },
 
   async addFeedback(trackId, feedback) {
-    await withCAS(get, set, (data) =>
+    await withCAS(set, (data) =>
       appendToTrack(data, trackId, "feedbacks", feedback)
     );
   },
 
   async addRefinement(trackId, refinement) {
-    await withCAS(get, set, (data) =>
+    await withCAS(set, (data) =>
       appendToTrack(data, trackId, "refinements", refinement)
     );
   },
 
   async addNote(trackId, note) {
-    await withCAS(get, set, (data) =>
+    await withCAS(set, (data) =>
       appendToTrack(data, trackId, "notes", note)
     );
   },
