@@ -1,10 +1,29 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Copy, Check } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { McpInfoPanel } from "../components/McpInfoPanel";
 import { AiPanel } from "../components/ai/AiPanel";
 import { useAlbumStore } from "../store/useAlbumStore";
+
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  function handleCopy() {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
+  return (
+    <button
+      onClick={handleCopy}
+      className="shrink-0 rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+      title="Copy to clipboard"
+    >
+      {copied ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
+    </button>
+  );
+}
 
 const inputClass =
   "w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring transition-colors";
@@ -32,7 +51,6 @@ export function TrackDetail() {
   const [editBpm, setEditBpm] = useState("");
   const [editKey, setEditKey] = useState("");
   const [editConcept, setEditConcept] = useState("");
-  const [editLyrics, setEditLyrics] = useState("");
 
   useEffect(() => {
     if (!isLoaded) {
@@ -47,7 +65,6 @@ export function TrackDetail() {
       setEditBpm(track.bpm != null ? String(track.bpm) : "");
       setEditKey(track.key ?? "");
       setEditConcept(track.concept ?? "");
-      setEditLyrics(track.lyrics ?? "");
     }
   }, [track]);
 
@@ -74,17 +91,8 @@ export function TrackDetail() {
       bpm: bpm && !isNaN(bpm) ? bpm : undefined,
       key: editKey.trim() || undefined,
       concept: editConcept.trim() || undefined,
-      lyrics: editLyrics.trim() || undefined,
     });
   }
-
-  const agentHistory = track.agentRequests
-    .slice()
-    .reverse()
-    .map((req) => ({
-      request: req,
-      response: track.agentResponses.find((r) => r.requestId === req.id),
-    }));
 
   return (
     <div className="flex h-full flex-col gap-6 p-6 overflow-auto">
@@ -153,57 +161,11 @@ export function TrackDetail() {
             rows={2}
           />
         </div>
-        <div className="space-y-1">
-          <label className="text-xs text-muted-foreground">Lyrics</label>
-          <textarea
-            className={`${inputClass} resize-y`}
-            value={editLyrics}
-            onChange={(e) => setEditLyrics(e.target.value)}
-            placeholder="가사를 입력하세요..."
-            rows={6}
-          />
-        </div>
         <div>
           <Button type="submit" size="sm">Save</Button>
         </div>
       </form>
 
-      {/* Agent history */}
-      {agentHistory.length > 0 && (
-        <div className="flex flex-col gap-3">
-          <h2 className="text-sm font-semibold">Agent History</h2>
-          <div className="flex flex-col gap-2">
-            {agentHistory.map(({ request, response }) => (
-              <div
-                key={request.id}
-                className="rounded-lg border bg-muted/20 p-3 flex flex-col gap-1.5"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">{request.task}</span>
-                  <span className="text-xs text-muted-foreground">
-                    {formatDate(request.createdAt)}
-                  </span>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Provider: {request.provider}
-                </p>
-                {response && (
-                  <span
-                    className={[
-                      "inline-flex w-fit items-center rounded-full px-2 py-0.5 text-xs font-medium",
-                      response.parseStatus === "success"
-                        ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                        : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
-                    ].join(" ")}
-                  >
-                    {response.parseStatus === "success" ? "Parsed" : "Parse failed"}
-                  </span>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Prompts */}
       {track.prompts.length > 0 && (
@@ -218,17 +180,24 @@ export function TrackDetail() {
             {track.prompts.slice().reverse().map((prompt) => (
               <div
                 key={prompt.id}
-                className="rounded-lg border bg-muted/20 p-3 flex flex-col gap-1"
+                className="rounded-lg border bg-muted/20 p-3 flex flex-col gap-3"
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-muted-foreground">
-                    Prompt
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    {formatDate(prompt.createdAt)}
-                  </span>
+                  <span className="text-xs font-medium text-muted-foreground">Suno Prompt</span>
+                  <span className="text-xs text-muted-foreground">{formatDate(prompt.createdAt)}</span>
                 </div>
-                {prompt.basic && <p className="text-sm"><span className="font-medium">Basic:</span> {prompt.basic}</p>}
+                {prompt.style && (
+                  <div className="flex flex-col gap-1">
+                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Style of Music</span>
+                    <p className="text-sm bg-background rounded p-2 border leading-relaxed">{prompt.style}</p>
+                  </div>
+                )}
+                {prompt.lyrics && (
+                  <div className="flex flex-col gap-1">
+                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Lyrics</span>
+                    <pre className="text-sm bg-background rounded p-2 border whitespace-pre-wrap font-sans leading-relaxed">{prompt.lyrics}</pre>
+                  </div>
+                )}
                 {prompt.moreRefreshing && <p className="text-sm"><span className="font-medium">Refreshing:</span> {prompt.moreRefreshing}</p>}
                 {prompt.moreEmotional && <p className="text-sm"><span className="font-medium">Emotional:</span> {prompt.moreEmotional}</p>}
               </div>

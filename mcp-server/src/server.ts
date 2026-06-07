@@ -315,6 +315,28 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const requestId = randomId();
         const responseId = randomId();
         const t = now();
+
+        // generate_suno_prompts task일 때 track.prompts에도 자동 추가 (style/lyrics 분리)
+        let generatedPrompt: Record<string, unknown> | null = null;
+        if (String(a.task) === "generate_suno_prompts" && parseStatus === "success" && parsedJson) {
+          const p = parsedJson as Record<string, unknown>;
+          const style = typeof p.style === "string" ? p.style : "";
+          const lyrics = typeof p.lyrics === "string" ? p.lyrics : "";
+          if (style || lyrics) {
+            generatedPrompt = {
+              id: randomId(),
+              requestId,
+              style,
+              lyrics,
+              moreRefreshing: "",
+              moreEmotional: "",
+              vocalFocused: "",
+              grooveFocused: "",
+              createdAt: t,
+            };
+          }
+        }
+
         withCAS((data) => {
           const req = { id: requestId, provider: "manual" as const, task: String(a.task), input: {}, outputSchema: "", instruction: "", createdAt: t };
           const res = { id: responseId, requestId, provider: "manual" as const, rawText, parsedJson, parseStatus, errorMessage, createdAt: t };
@@ -324,6 +346,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               ...track,
               agentRequests: [...track.agentRequests, req],
               agentResponses: [...track.agentResponses, res],
+              prompts: generatedPrompt ? [...track.prompts, generatedPrompt] : track.prompts,
               updatedAt: t,
             };
           });

@@ -8,7 +8,8 @@ export type SongBrief = {
 export type GeneratedPrompt = {
   id: string;
   requestId: string;
-  basic: string;
+  style: string;
+  lyrics: string;
   moreRefreshing: string;
   moreEmotional: string;
   vocalFocused: string;

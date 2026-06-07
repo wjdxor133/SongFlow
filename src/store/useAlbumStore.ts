@@ -31,8 +31,11 @@ type AlbumStore = {
   albums: Album[];
   tracks: Track[];
   isLoaded: boolean;
+  _version: number;
 
   init: () => Promise<void>;
+  startPolling: () => void;
+  stopPolling: () => void;
 
   // Album
   createAlbum: (input: {
@@ -123,14 +126,34 @@ async function withCAS(
   }
 }
 
+let _pollTimer: ReturnType<typeof setInterval> | null = null;
+
 export const useAlbumStore = create<AlbumStore>((set, get) => ({
   albums: [],
   tracks: [],
   isLoaded: false,
+  _version: -1,
 
   async init() {
     const data = await loadData();
-    set({ albums: data.albums, tracks: data.tracks, isLoaded: true });
+    set({ albums: data.albums, tracks: data.tracks, isLoaded: true, _version: data.version });
+  },
+
+  startPolling() {
+    if (_pollTimer) return;
+    _pollTimer = setInterval(async () => {
+      const data = await loadData();
+      if (data.version !== get()._version) {
+        set({ albums: data.albums, tracks: data.tracks, _version: data.version });
+      }
+    }, 2000);
+  },
+
+  stopPolling() {
+    if (_pollTimer) {
+      clearInterval(_pollTimer);
+      _pollTimer = null;
+    }
   },
 
   async createAlbum(input) {
