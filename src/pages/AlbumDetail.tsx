@@ -90,9 +90,8 @@ export function AlbumDetail() {
   const navigate = useNavigate();
   const isLoaded = useAlbumStore((s) => s.isLoaded);
   const album = useAlbumStore((s) => s.albums.find((a) => a.id === albumId));
-  const tracks = useAlbumStore((s) =>
-    s.tracks.filter((t) => t.albumId === albumId)
-  );
+  const allTracks = useAlbumStore((s) => s.tracks);
+  const tracks = allTracks.filter((t) => t.albumId === albumId);
   const updateAlbum = useAlbumStore((s) => s.updateAlbum);
   const deleteTrack = useAlbumStore((s) => s.deleteTrack);
   const getTrackEffectiveGenre = useAlbumStore((s) => s.getTrackEffectiveGenre);
