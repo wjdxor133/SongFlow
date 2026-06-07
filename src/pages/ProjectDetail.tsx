@@ -2,6 +2,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { useProjectStore } from "../store/useProjectStore";
+import { ManualAgentPanel } from "../components/agent/ManualAgentPanel";
 
 export function ProjectDetail() {
   const { id } = useParams<{ id: string }>();
@@ -23,7 +24,7 @@ export function ProjectDetail() {
   }
 
   return (
-    <div className="flex h-full flex-col gap-6 p-6">
+    <div className="flex h-full flex-col gap-6 p-6 overflow-auto">
       <div className="flex items-center gap-3">
         <Button
           variant="ghost"
@@ -45,18 +46,31 @@ export function ProjectDetail() {
             {project.description}
           </p>
         )}
-      </div>
-
-      <div className="flex flex-1 items-center justify-center rounded-lg border border-dashed">
-        <div className="flex flex-col items-center gap-2 text-center">
-          <p className="text-sm font-medium text-muted-foreground">
-            Project detail coming soon
-          </p>
-          <p className="text-xs text-muted-foreground">
-            This workspace will be available in a future update.
-          </p>
+        <div className="mt-2 flex flex-wrap gap-2">
+          {project.genre && (
+            <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium">
+              {project.genre}
+            </span>
+          )}
+          {project.moods.map((mood) => (
+            <span
+              key={mood}
+              className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs"
+            >
+              {mood}
+            </span>
+          ))}
         </div>
       </div>
+
+      <div className="flex flex-col gap-1">
+        <h2 className="text-sm font-semibold">Manual Agent Mode</h2>
+        <p className="text-xs text-muted-foreground">
+          Provider: <span className="font-medium">{project.agentProvider}</span>
+        </p>
+      </div>
+
+      <ManualAgentPanel project={project} />
     </div>
   );
 }
