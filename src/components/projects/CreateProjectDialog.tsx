@@ -4,7 +4,7 @@ import { X } from "lucide-react";
 import { Button } from "../ui/button";
 import { useProjectStore } from "../../store/useProjectStore";
 
-type Props = {
+type CreateProjectDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 };
@@ -12,7 +12,7 @@ type Props = {
 const inputClass =
   "w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring transition-colors";
 
-export function CreateProjectDialog({ open, onOpenChange }: Props) {
+export function CreateProjectDialog({ open, onOpenChange }: CreateProjectDialogProps) {
   const createProject = useProjectStore((s) => s.createProject);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
