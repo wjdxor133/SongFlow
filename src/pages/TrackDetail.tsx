@@ -188,13 +188,19 @@ export function TrackDetail() {
                 </div>
                 {prompt.style && (
                   <div className="flex flex-col gap-1">
-                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Style of Music</span>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Style of Music</span>
+                      <CopyButton text={prompt.style} />
+                    </div>
                     <p className="text-sm bg-background rounded p-2 border leading-relaxed">{prompt.style}</p>
                   </div>
                 )}
                 {prompt.lyrics && (
                   <div className="flex flex-col gap-1">
-                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Lyrics</span>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Lyrics</span>
+                      <CopyButton text={prompt.lyrics} />
+                    </div>
                     <pre className="text-sm bg-background rounded p-2 border whitespace-pre-wrap font-sans leading-relaxed">{prompt.lyrics}</pre>
                   </div>
                 )}
