@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { McpInfoPanel } from "../components/McpInfoPanel";
+import { AiPanel } from "../components/ai/AiPanel";
 import { useAlbumStore } from "../store/useAlbumStore";
 
 const inputClass =
@@ -341,6 +342,14 @@ export function TrackDetail() {
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* AI Panel */}
+      {album && (
+        <div className="flex flex-col gap-3">
+          <h2 className="text-sm font-semibold">AI 작업</h2>
+          <AiPanel track={track} album={album} />
         </div>
       )}
 
