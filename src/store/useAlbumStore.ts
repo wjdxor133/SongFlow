@@ -16,7 +16,6 @@ import {
   saveDataCAS,
   VersionConflictError,
 } from "../lib/storage/fileStore";
-import { migrateLegacy } from "../lib/storage/migrate";
 import {
   createAlbum as dmCreateAlbum,
   updateAlbum as dmUpdateAlbum,
@@ -130,7 +129,6 @@ export const useAlbumStore = create<AlbumStore>((set, get) => ({
   isLoaded: false,
 
   async init() {
-    await migrateLegacy();
     const data = await loadData();
     set({ albums: data.albums, tracks: data.tracks, isLoaded: true });
   },
