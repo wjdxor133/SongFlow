@@ -1,7 +1,6 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { AppShell } from "./layouts/AppShell";
 import { Dashboard } from "./pages/Dashboard";
-import { ProjectDetail } from "./pages/ProjectDetail";
 import { AlbumDetail } from "./pages/AlbumDetail";
 import { TrackDetail } from "./pages/TrackDetail";
 import { Settings } from "./pages/Settings";
@@ -12,7 +11,6 @@ function App() {
       <Routes>
         <Route element={<AppShell />}>
           <Route index element={<Dashboard />} />
-          <Route path="projects/:id" element={<ProjectDetail />} />
           <Route path="albums/:albumId" element={<AlbumDetail />} />
           <Route path="albums/:albumId/tracks/:trackId" element={<TrackDetail />} />
           <Route path="settings" element={<Settings />} />
