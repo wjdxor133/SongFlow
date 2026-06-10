@@ -1,0 +1,23 @@
+{
+  "name": "songflow-mcp",
+  "version": "0.1.0",
+  "description": "SongFlow local MCP server for AI-assisted music production",
+  "type": "module",
+  "main": "dist/server.js",
+  "bin": {
+    "songflow-mcp": "dist/server.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node dist/server.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "zod": "^3.0.0"
+  },
+  "devDependencies": {
+    "typescript": "~5.8.3",
+    "@types/node": "^22.0.0"
+  }
+}

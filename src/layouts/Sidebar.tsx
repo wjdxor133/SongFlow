@@ -1,9 +1,10 @@
-import { LayoutDashboard, Music2 } from "lucide-react";
+import { LayoutDashboard, Music2, Settings } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/settings", label: "Settings", icon: Settings },
 ];
 
 export function Sidebar() {
