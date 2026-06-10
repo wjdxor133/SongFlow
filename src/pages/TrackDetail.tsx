@@ -4,6 +4,7 @@ import { ArrowLeft, Copy, Check } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { McpInfoPanel } from "../components/McpInfoPanel";
 import { AiPanel } from "../components/ai/AiPanel";
+import { ReferenceSongSection } from "../components/track/ReferenceSongSection";
 import { useAlbumStore } from "../store/useAlbumStore";
 
 function CopyButton({ text }: { text: string }) {
@@ -179,6 +180,8 @@ export function TrackDetail() {
         </div>
       </form>
 
+      {/* References */}
+      <ReferenceSongSection track={track} />
 
       {/* Prompts */}
       {track.prompts.length > 0 && (
