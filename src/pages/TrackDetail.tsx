@@ -5,6 +5,7 @@ import { Button } from "../components/ui/button";
 import { McpInfoPanel } from "../components/McpInfoPanel";
 import { AiPanel } from "../components/ai/AiPanel";
 import { ReferenceSongSection } from "../components/track/ReferenceSongSection";
+import { SongBriefSection } from "../components/track/SongBriefSection";
 import { useAlbumStore } from "../store/useAlbumStore";
 
 function CopyButton({ text }: { text: string }) {
@@ -182,6 +183,9 @@ export function TrackDetail() {
 
       {/* References */}
       <ReferenceSongSection track={track} />
+
+      {/* Song Brief */}
+      <SongBriefSection track={track} />
 
       {/* Prompts */}
       {track.prompts.length > 0 && (

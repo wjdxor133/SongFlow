@@ -83,6 +83,7 @@ export function AiPanel({ track, album }: AiPanelProps) {
       id: responseId,
       requestId: crypto.randomUUID(),
       provider: "claude-api" as const,
+      task: selectedTask,
       rawText,
       parsedJson,
       parseStatus,
