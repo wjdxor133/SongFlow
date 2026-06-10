@@ -29,6 +29,7 @@ export type AgentResponse = {
   id: string;
   requestId: string;
   provider: AgentProvider;
+  task?: AgentTask;
   rawText: string;
   parsedJson?: unknown;
   parseStatus: "success" | "failed";
