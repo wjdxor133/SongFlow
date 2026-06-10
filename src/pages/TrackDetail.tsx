@@ -1,32 +1,14 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Copy, Check } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { McpInfoPanel } from "../components/McpInfoPanel";
 import { AiPanel } from "../components/ai/AiPanel";
 import { ReferenceSongSection } from "../components/track/ReferenceSongSection";
 import { SongBriefSection } from "../components/track/SongBriefSection";
 import { ChordGrooveSection } from "../components/track/ChordGrooveSection";
+import { PromptLabSection } from "../components/track/PromptLabSection";
 import { useAlbumStore } from "../store/useAlbumStore";
-
-function CopyButton({ text }: { text: string }) {
-  const [copied, setCopied] = useState(false);
-  function handleCopy() {
-    navigator.clipboard.writeText(text).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
-  }
-  return (
-    <button
-      onClick={handleCopy}
-      className="shrink-0 rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-      title="Copy to clipboard"
-    >
-      {copied ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
-    </button>
-  );
-}
 
 const inputClass =
   "w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring transition-colors";
@@ -188,50 +170,8 @@ export function TrackDetail() {
       {/* Song Brief */}
       <SongBriefSection track={track} />
 
-      {/* Prompts */}
-      {track.prompts.length > 0 && (
-        <div className="flex flex-col gap-3">
-          <h2 className="text-sm font-semibold">
-            Prompts{" "}
-            <span className="text-sm font-normal text-muted-foreground">
-              ({track.prompts.length})
-            </span>
-          </h2>
-          <div className="flex flex-col gap-2">
-            {track.prompts.slice().reverse().map((prompt) => (
-              <div
-                key={prompt.id}
-                className="rounded-lg border bg-muted/20 p-3 flex flex-col gap-3"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-muted-foreground">Suno Prompt</span>
-                  <span className="text-xs text-muted-foreground">{formatDate(prompt.createdAt)}</span>
-                </div>
-                {prompt.style && (
-                  <div className="flex flex-col gap-1">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Style of Music</span>
-                      <CopyButton text={prompt.style} />
-                    </div>
-                    <p className="text-sm bg-background rounded p-2 border leading-relaxed">{prompt.style}</p>
-                  </div>
-                )}
-                {prompt.lyrics && (
-                  <div className="flex flex-col gap-1">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Lyrics</span>
-                      <CopyButton text={prompt.lyrics} />
-                    </div>
-                    <pre className="text-sm bg-background rounded p-2 border whitespace-pre-wrap font-sans leading-relaxed">{prompt.lyrics}</pre>
-                  </div>
-                )}
-                {prompt.moreRefreshing && <p className="text-sm"><span className="font-medium">Refreshing:</span> {prompt.moreRefreshing}</p>}
-                {prompt.moreEmotional && <p className="text-sm"><span className="font-medium">Emotional:</span> {prompt.moreEmotional}</p>}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Prompt Lab */}
+      <PromptLabSection track={track} />
 
       {/* Suno results */}
       {track.sunoResults.length > 0 && (
