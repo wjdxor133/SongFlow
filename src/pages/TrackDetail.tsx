@@ -51,6 +51,7 @@ export function TrackDetail() {
   const [editBpm, setEditBpm] = useState("");
   const [editKey, setEditKey] = useState("");
   const [editConcept, setEditConcept] = useState("");
+  const [editLyrics, setEditLyrics] = useState("");
 
   useEffect(() => {
     if (!isLoaded) {
@@ -65,6 +66,7 @@ export function TrackDetail() {
       setEditBpm(track.bpm != null ? String(track.bpm) : "");
       setEditKey(track.key ?? "");
       setEditConcept(track.concept ?? "");
+      setEditLyrics(track.lyrics ?? "");
     }
   }, [track]);
 
@@ -91,6 +93,7 @@ export function TrackDetail() {
       bpm: bpm && !isNaN(bpm) ? bpm : undefined,
       key: editKey.trim() || undefined,
       concept: editConcept.trim() || undefined,
+      lyrics: editLyrics.trim() || undefined,
     });
   }
 
@@ -159,6 +162,16 @@ export function TrackDetail() {
             onChange={(e) => setEditConcept(e.target.value)}
             placeholder="What's this track about?"
             rows={2}
+          />
+        </div>
+        <div className="space-y-1">
+          <label className="text-xs text-muted-foreground">Lyrics</label>
+          <textarea
+            className={`${inputClass} resize-none`}
+            value={editLyrics}
+            onChange={(e) => setEditLyrics(e.target.value)}
+            placeholder="Write your lyrics here..."
+            rows={6}
           />
         </div>
         <div>

@@ -1,241 +1,60 @@
-# SongFlow Local Project Specification
+# SongFlow — Project Specification (v2)
+
+> **v2 변경 사항**: 기획 피벗으로 인해 전면 재작성 (2026-06).
+> SongProject 단위 → Album/Track 계층 구조, Manual Agent Mode → MCP 서버 + 인앱 Claude API.
+
+---
 
 ## 1. Core Purpose
 
-SongFlow Local is a Tauri-based local desktop workspace for AI-assisted music production.
+SongFlow는 AI 기반 음악 제작 워크플로우를 위한 Tauri 기반 로컬 데스크톱 앱이다.
 
-The app helps users connect their own AI agents, such as ChatGPT/Codex, Claude Code, Gemini CLI, or Ollama, to a repeatable music creation workflow:
+**앱의 역할**: 데이터 뷰어 + 워크플로우 허브  
+**AI의 역할**: 실제 작업 수행 (프롬프트 생성, 브리프 작성, 분석 등)
 
-1. Create a song project.
-2. Add reference song notes.
-3. Generate safe musical analysis through an agent.
-4. Preview chord and groove ideas.
-5. Generate Suno-ready prompts.
-6. Record Suno results.
-7. Add feedback.
-8. Generate refined prompts.
-9. Repeat until a preferred version is selected.
+### AI 연결 방식 (2가지)
 
-SongFlow Local does not provide its own AI model or music generation engine. It is a local workflow tool that stores project data and coordinates agent prompts, responses, music preview choices, Suno result logs, and refinements.
+| 방식 | 대상 | API 키 |
+|------|------|--------|
+| **MCP 서버** | Claude Code, Cursor 등 AI 개발 도구 사용자 | 불필요 |
+| **인앱 Claude API** | 일반 사용자 | Anthropic API 키 필요 |
 
-## 2. Product Direction
+---
 
-### Do
+## 2. 데이터 구조
 
-- Build a Tauri desktop app.
-- Use React, TypeScript, Vite, Tailwind CSS, Zustand, Tone.js, and localStorage.
-- Store all MVP data locally.
-- Support agent-based workflows.
-- Implement Manual Agent Mode first.
-- Keep an extensible provider structure for Codex CLI, Claude Code CLI, Gemini CLI, Ollama, and API providers.
-- Store agent requests and responses, including raw text and parsed JSON.
-- Preserve raw text when JSON parsing fails.
-- Make every generated agent prompt visible and copyable by the user.
-- Convert reference artist/song mentions into neutral musical descriptions before using them in Suno prompts.
+### 계층 구조
 
-### Do Not
-
-- Do not build a SaaS backend.
-- Do not add login, signup, billing, or server storage.
-- Do not provide an in-app LLM or music generation model.
-- Do not integrate Suno, Splice, Spotify, or Ableton APIs in the MVP.
-- Do not scrape, automate, or reuse web login sessions.
-- Do not access browser cookies.
-- Do not implement automatic CLI agent execution in the first MVP.
-
-## 3. First MVP Scope
-
-The first MVP should implement the local workflow loop with Manual Agent Mode.
-
-### MVP Features
-
-1. Project Dashboard
-   - Create projects.
-   - List projects.
-   - Show status and recent update time.
-   - Delete projects.
-   - Open project detail.
-
-2. Agent Settings
-   - Select default provider.
-   - Default to Manual.
-   - Show placeholder status for future CLI/Ollama providers.
-
-3. Manual Agent Mode
-   - Generate task-specific agent prompts.
-   - Copy prompts.
-   - Paste agent responses.
-   - Parse JSON.
-   - Save `rawText`, `parsedJson`, parse status, and error message.
-   - Preserve `rawText` on parsing failure.
-
-4. Reference Song Analyzer
-   - Save reference song notes.
-   - Generate `analyze_reference_song` prompts.
-   - Save reference analysis responses.
-   - Keep artist/song names out of generated Suno prompts.
-
-5. Song Brief Generator
-   - Create a project-level song brief.
-   - Generate `generate_song_brief` prompts.
-   - Save generated brief data.
-
-6. Chord & Groove Preview
-   - Use Tone.js.
-   - Provide at least 3 default chord progressions.
-   - Provide at least 3 default groove patterns.
-   - Support Chord Only, Chord + Bass, Full Groove, Stop.
-   - Support BPM changes.
-   - Save selected chord and groove choices.
-
-7. Prompt Lab
-   - Generate `generate_suno_prompts` agent prompts.
-   - Save generated prompt variants:
-     - Basic
-     - More Refreshing
-     - More Emotional
-     - Vocal Focused
-     - Groove Focused
-
-8. Sound Search Guide
-   - Generate sample search keyword groups.
-   - Support drums, bass, melody, harmony, fx, and vocal keyword groups.
-
-9. Suno Result Log
-   - Save Suno result URL.
-   - Link result to a generated prompt.
-   - Save version label, rating, memo, and best-version flag.
-
-10. Prompt Refinement Lab
-    - Save liked and weak parts.
-    - Generate `refine_suno_prompt` prompts.
-    - Save revised prompt recommendations.
-
-11. Agent History
-    - List requests and responses.
-    - Show parse success or failure.
-    - Allow raw response text to be corrected and parsed again.
-
-12. Notes
-    - Save local project notes.
-
-## 4. Not In First MVP
-
-- Automatic Codex CLI execution.
-- Automatic Claude Code CLI execution.
-- Automatic Gemini CLI execution.
-- Automatic Ollama execution.
-- API key management.
-- Tauri Store or SQLite migration.
-- Suno API integration.
-- Sample platform API integration.
-- Spotify or audio file analysis.
-- MIDI export.
-- Cloud sync.
-- Collaboration.
-- Authentication.
-
-## 5. Recommended Development Order
-
-1. Create this `PROJECT_SPEC.md` and confirm MVP scope.
-2. Set up Tauri + React + TypeScript + Vite.
-3. Configure Tailwind CSS and install Zustand.
-4. Build the base AppShell and empty Dashboard.
-5. Define core TypeScript types.
-6. Implement localStorage storage utilities.
-7. Implement Zustand project store.
-8. Implement Dashboard project CRUD.
-9. Implement Agent Request/Response and Manual Agent Mode.
-10. Implement Reference Song Analyzer.
-11. Implement Song Brief Generator.
-12. Implement Chord & Groove Preview with Tone.js.
-13. Implement Prompt Lab and Sound Search Guide.
-14. Implement Suno Result Log and Prompt Refinement Lab.
-15. Implement Agent History and Notes.
-16. Run CLI/Ollama provider POCs after the Manual Agent Mode MVP is stable.
-
-## 6. Core Types
-
-### AgentProvider
-
-```ts
-type AgentProvider =
-  | "manual"
-  | "codex-cli"
-  | "claude-code-cli"
-  | "gemini-cli"
-  | "ollama"
-  | "openai-api"
-  | "claude-api"
-  | "gemini-api";
+```
+Album (앨범)
+  └── Track (수록곡) × N
 ```
 
-### ProjectStatus
+### Album
 
 ```ts
-type ProjectStatus =
-  | "idea"
-  | "reference"
-  | "prompting"
-  | "suno_testing"
-  | "refining"
-  | "selected"
-  | "archived";
-```
-
-### AgentTask
-
-```ts
-type AgentTask =
-  | "analyze_reference_song"
-  | "generate_song_brief"
-  | "generate_suno_prompts"
-  | "generate_sound_keywords"
-  | "refine_suno_prompt";
-```
-
-### AgentRequest
-
-```ts
-type AgentRequest = {
-  id: string;
-  provider: AgentProvider;
-  task: AgentTask;
-  input: unknown;
-  outputSchema: string;
-  instruction: string;
-  createdAt: string;
-};
-```
-
-### AgentResponse
-
-```ts
-type AgentResponse = {
-  id: string;
-  requestId: string;
-  provider: AgentProvider;
-  rawText: string;
-  parsedJson?: unknown;
-  parseStatus: "success" | "failed";
-  errorMessage?: string;
-  createdAt: string;
-};
-```
-
-### SongProject
-
-```ts
-type SongProject = {
+type Album = {
   id: string;
   title: string;
-  description: string;
   genre: string;
-  moods: string[];
-  targetVibe: string;
-  status: ProjectStatus;
-  agentProvider: AgentProvider;
-  brief?: SongBrief;
+  concept: string;
+  createdAt: string;
+  updatedAt: string;
+};
+```
+
+### Track
+
+```ts
+type Track = {
+  id: string;
+  albumId: string;
+  title: string;
+  genre?: string;          // 없으면 Album.genre 상속
+  bpm?: number;
+  key?: string;
+  concept?: string;
+  lyrics?: string;
   references: ReferenceSong[];
   referenceAnalyses: ReferenceAnalysis[];
   chordProgressions: ChordProgression[];
@@ -243,140 +62,120 @@ type SongProject = {
   groovePatterns: GroovePattern[];
   selectedGroovePatternId?: string;
   soundKeywords?: SoundKeywordGroup;
-  samplePlatformGuides?: SamplePlatformGuide[];
   prompts: GeneratedPrompt[];
   sunoResults: SunoResult[];
   feedbacks: ResultFeedback[];
   refinements: PromptRefinement[];
   agentRequests: AgentRequest[];
   agentResponses: AgentResponse[];
-  notes: ProjectNote[];
+  notes: TrackNote[];
   createdAt: string;
   updatedAt: string;
 };
 ```
 
-## 7. Agent Prompt Rules
+### 스토리지
 
-Every agent task should include these rules:
+- **파일**: `~/Library/Application Support/com.wjdxor133.songflow/songflow-data.json`
+- **형식**: `{ version: number; albums: Album[]; tracks: Track[] }`
+- **동시 쓰기 안전성**: CAS (Compare-and-Swap) — version 필드로 충돌 감지 및 재시도
 
-```text
-You are an AI music production assistant helping a beginner create Suno-ready demo prompts.
+---
 
-Important rules:
-- Do not directly imitate or copy any specific artist or song.
-- Use reference songs only to extract musical characteristics.
-- Convert artist/song references into neutral musical descriptions.
-- Do not mention artist names or song titles in Suno prompts.
-- Return only valid JSON.
-- Do not include markdown.
-- Do not include explanations outside JSON.
+## 3. 현재 구현 상태
+
+### 완료
+
+- [x] Tauri 2 + React 19 + TypeScript + Vite + Tailwind 셋업
+- [x] Album/Track 핵심 타입 정의
+- [x] 파일 기반 스토리지 (Tauri fs 플러그인, CAS)
+- [x] Zustand 스토어 (`useAlbumStore`, `useConfigStore`)
+- [x] Dashboard — Album 목록, 생성, 삭제
+- [x] AlbumDetail — Track 목록, 생성, 삭제, 앨범 편집
+- [x] TrackDetail — 인라인 편집 (제목, 장르, BPM, Key, 컨셉, 가사)
+- [x] MCP 서버 (`mcp-server/`) — Album/Track CRUD + 워크플로우 툴 14개
+- [x] Settings 페이지 — Anthropic API 키 저장
+- [x] 인앱 AI 패널 — Claude API로 태스크 실행 (송 브리프, Suno 프롬프트, 사운드 키워드)
+- [x] Agent History 표시 (TrackDetail)
+- [x] Suno Results 표시 (TrackDetail)
+
+### 미구현 (이슈 참고)
+
+- [ ] #8 Reference Song Analyzer UI (레퍼런스 곡 입력 + 분석)
+- [ ] #9 Song Brief Generator 결과 전용 뷰
+- [ ] #10 Chord & Groove Preview (Tone.js)
+- [ ] #11 Prompt Lab — 생성된 프롬프트 관리 UI
+- [ ] #12 Suno Result 인앱 입력 폼
+- [ ] #13 Notes UI
+
+---
+
+## 4. MCP 서버
+
+### 위치
+`mcp-server/` (독립 Node.js 패키지)
+
+### 빌드
+```bash
+cd mcp-server
+npm install && npm run build
 ```
 
-## 8. Expected Folder Structure
-
-```text
-src/
-  components/
-    layout/
-      AppShell.tsx
-      Sidebar.tsx
-    settings/
-      AgentSettings.tsx
-      ProviderStatusCard.tsx
-    project/
-      ProjectCard.tsx
-      NewProjectForm.tsx
-      ProjectTabs.tsx
-    references/
-      ReferenceSongForm.tsx
-      ReferenceAnalyzer.tsx
-      ReferenceAnalysisCard.tsx
-    brief/
-      SongBriefPanel.tsx
-    groove/
-      ChordGrooveLab.tsx
-      ChordCard.tsx
-      GroovePatternCard.tsx
-      GroovePlayer.tsx
-    prompts/
-      PromptLab.tsx
-      PromptCard.tsx
-    sounds/
-      SoundSearchGuide.tsx
-      KeywordGroup.tsx
-    suno/
-      SunoResultLog.tsx
-      SunoResultCard.tsx
-    refinement/
-      PromptRefinementLab.tsx
-      FeedbackChecklist.tsx
-      RefinementCard.tsx
-    agents/
-      AgentPromptPanel.tsx
-      AgentResponsePasteBox.tsx
-      AgentHistory.tsx
-      ProviderSelector.tsx
-    notes/
-      ProjectNotes.tsx
-  lib/
-    agents/
-      types.ts
-      createAgentRequest.ts
-      parseAgentResponse.ts
-      manualAgentConnector.ts
-      codexCliConnector.ts
-      claudeCodeCliConnector.ts
-      geminiCliConnector.ts
-      ollamaConnector.ts
-    agent-prompts/
-      analyzeReferenceSongPrompt.ts
-      generateSongBriefPrompt.ts
-      generateSunoPromptsPrompt.ts
-      generateSoundKeywordsPrompt.ts
-      refineSunoPromptPrompt.ts
-    data/
-      chordProgressions.ts
-      groovePatterns.ts
-      chordNotes.ts
-      samplePlatforms.ts
-    music/
-      chordUtils.ts
-      groovePlayer.ts
-    storage/
-      localStorage.ts
-    types/
-      project.ts
-      reference.ts
-      music.ts
-      prompt.ts
-      suno.ts
-      agent.ts
-  store/
-    useProjectStore.ts
-  App.tsx
-  main.tsx
+### Claude Code 연결
+```bash
+claude mcp add songflow node /path/to/SongFlow/mcp-server/dist/server.js
 ```
 
-## 9. MVP Completion Criteria
+### 제공 툴 (14개)
 
-MVP is complete when:
+**Album**: `list_albums`, `get_album`, `create_album`, `update_album`, `delete_album`
 
-- The Tauri app runs locally.
-- A project can be created, listed, opened, updated, and deleted.
-- Manual Agent Mode can generate prompts, copy them, accept pasted responses, parse JSON, and store request/response history.
-- Reference analysis, song brief, Suno prompt generation, sound keyword generation, result logging, feedback, and refinement can be performed through Manual Agent Mode.
-- Chord and groove preview works through Tone.js.
-- All project data persists locally.
-- CLI/Ollama automation remains separated as a later POC.
+**Track**: `list_tracks`, `get_track`, `create_track`, `update_track`, `delete_track`
 
-## 10. First POC After MVP
+**Workflow**: `save_agent_response`, `get_track_prompts`, `save_suno_result`, `get_agent_history`
 
-After Manual Agent Mode is stable, validate automatic providers in this order:
+---
 
-1. Codex CLI POC.
-2. Claude Code CLI POC.
-3. Gemini CLI POC.
-4. Ollama Provider POC.
+## 5. 워크플로우
 
-Each POC should confirm install requirements, invocation method, JSON-only response reliability, timeout behavior, and security/terms constraints before product implementation.
+### MCP 방식 (Claude Code 사용자)
+```
+Claude Code에서:
+1. list_albums → 앨범 확인
+2. create_track(albumId, title, concept, bpm, key) → 트랙 생성
+3. "이 트랙의 Suno 프롬프트 만들어줘" → Claude가 분석 후 save_agent_response
+4. SongFlow 앱에서 결과 확인
+```
+
+### 인앱 API 방식 (일반 사용자)
+```
+SongFlow 앱에서:
+1. Settings → Anthropic API 키 입력
+2. TrackDetail → AI 패널 → 태스크 선택 → Generate
+3. 결과 확인 및 저장
+```
+
+---
+
+## 6. 기술 스택
+
+| 영역 | 기술 |
+|------|------|
+| 데스크톱 런타임 | Tauri 2 (Rust) |
+| 프론트엔드 | React 19, TypeScript, Vite |
+| 스타일링 | Tailwind CSS 4, shadcn/ui |
+| 상태 관리 | Zustand 5 |
+| 파일 I/O | @tauri-apps/plugin-fs |
+| MCP 서버 | @modelcontextprotocol/sdk, Node.js |
+| AI | Anthropic Claude API (fetch) |
+| 음악 미리듣기 | Tone.js (미구현) |
+
+---
+
+## 7. Product Principles
+
+- 로컬 전용 — 서버, 로그인, 클라우드 동기화 없음
+- 앱은 데이터를 저장하고 보여주는 역할, AI가 실제 작업 수행
+- API 키는 로컬 파일에만 저장 (서버 전송 없음)
+- MCP와 인앱 API는 공존 — 사용자가 선택
+- Suno, Spotify, Ableton 등 외부 서비스 API 통합 없음 (MVP)
