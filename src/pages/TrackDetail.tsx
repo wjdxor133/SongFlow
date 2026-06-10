@@ -9,6 +9,7 @@ import { SongBriefSection } from "../components/track/SongBriefSection";
 import { ChordGrooveSection } from "../components/track/ChordGrooveSection";
 import { PromptLabSection } from "../components/track/PromptLabSection";
 import { SunoInputForm } from "../components/track/SunoInputForm";
+import { NotesSection } from "../components/track/NotesSection";
 import { useAlbumStore } from "../store/useAlbumStore";
 
 const inputClass =
@@ -224,6 +225,9 @@ export function TrackDetail() {
 
       {/* Chord & Groove */}
       <ChordGrooveSection track={track} />
+
+      {/* Notes */}
+      <NotesSection track={track} />
 
       {/* AI Panel */}
       {album && (
