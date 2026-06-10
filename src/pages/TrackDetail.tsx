@@ -8,6 +8,7 @@ import { ReferenceSongSection } from "../components/track/ReferenceSongSection";
 import { SongBriefSection } from "../components/track/SongBriefSection";
 import { ChordGrooveSection } from "../components/track/ChordGrooveSection";
 import { PromptLabSection } from "../components/track/PromptLabSection";
+import { SunoInputForm } from "../components/track/SunoInputForm";
 import { useAlbumStore } from "../store/useAlbumStore";
 
 const inputClass =
@@ -174,14 +175,15 @@ export function TrackDetail() {
       <PromptLabSection track={track} />
 
       {/* Suno results */}
-      {track.sunoResults.length > 0 && (
-        <div className="flex flex-col gap-3">
-          <h2 className="text-sm font-semibold">
-            Suno Results{" "}
-            <span className="text-sm font-normal text-muted-foreground">
-              ({track.sunoResults.length})
-            </span>
-          </h2>
+      <div className="flex flex-col gap-3">
+        <h2 className="text-sm font-semibold">
+          Suno Results{" "}
+          <span className="text-sm font-normal text-muted-foreground">
+            ({track.sunoResults.length})
+          </span>
+        </h2>
+        <SunoInputForm track={track} />
+        {track.sunoResults.length > 0 && (
           <div className="flex flex-col gap-2">
             {track.sunoResults.slice().reverse().map((result) => (
               <div
@@ -217,8 +219,8 @@ export function TrackDetail() {
               </div>
             ))}
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Chord & Groove */}
       <ChordGrooveSection track={track} />
