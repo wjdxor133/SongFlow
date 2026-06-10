@@ -6,6 +6,7 @@ import { McpInfoPanel } from "../components/McpInfoPanel";
 import { AiPanel } from "../components/ai/AiPanel";
 import { ReferenceSongSection } from "../components/track/ReferenceSongSection";
 import { SongBriefSection } from "../components/track/SongBriefSection";
+import { ChordGrooveSection } from "../components/track/ChordGrooveSection";
 import { useAlbumStore } from "../store/useAlbumStore";
 
 function CopyButton({ text }: { text: string }) {
@@ -278,6 +279,9 @@ export function TrackDetail() {
           </div>
         </div>
       )}
+
+      {/* Chord & Groove */}
+      <ChordGrooveSection track={track} />
 
       {/* AI Panel */}
       {album && (
