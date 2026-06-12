@@ -2,12 +2,12 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Plus, Trash2, Music } from "lucide-react";
 import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Textarea } from "../components/ui/textarea";
+import { Badge } from "../components/ui/badge";
 import { CreateTrackDialog } from "../components/projects/CreateTrackDialog";
 import { useAlbumStore } from "../store/useAlbumStore";
 import type { Track } from "../lib/types/album";
-
-const inputClass =
-  "w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring transition-colors";
 
 function formatDate(iso: string) {
   return new Intl.DateTimeFormat(undefined, {
@@ -63,19 +63,13 @@ function TrackCard({
 
       <div className="flex flex-wrap items-center gap-1.5 pt-1">
         {effectiveGenre && (
-          <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-            {effectiveGenre}
-          </span>
+          <Badge variant="secondary">{effectiveGenre}</Badge>
         )}
         {track.bpm && (
-          <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-            {track.bpm} BPM
-          </span>
+          <Badge variant="secondary">{track.bpm} BPM</Badge>
         )}
         {track.key && (
-          <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-            {track.key}
-          </span>
+          <Badge variant="secondary">{track.key}</Badge>
         )}
         <span className="ml-auto shrink-0 text-xs text-muted-foreground">
           {formatDate(track.updatedAt)}
@@ -156,22 +150,19 @@ export function AlbumDetail() {
 
       {editing ? (
         <form onSubmit={handleSaveEdit} className="flex flex-col gap-3">
-          <input
-            className={inputClass}
+          <Input
             value={editTitle}
             onChange={(e) => setEditTitle(e.target.value)}
             placeholder="Album title"
             required
             autoFocus
           />
-          <input
-            className={inputClass}
+          <Input
             value={editGenre}
             onChange={(e) => setEditGenre(e.target.value)}
             placeholder="Genre"
           />
-          <textarea
-            className={`${inputClass} resize-none`}
+          <Textarea
             value={editConcept}
             onChange={(e) => setEditConcept(e.target.value)}
             placeholder="Concept"
@@ -210,9 +201,7 @@ export function AlbumDetail() {
           )}
           {album.genre && (
             <div className="mt-2">
-              <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium">
-                {album.genre}
-              </span>
+              <Badge variant="secondary">{album.genre}</Badge>
             </div>
           )}
         </div>

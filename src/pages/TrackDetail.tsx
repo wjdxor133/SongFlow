@@ -2,6 +2,9 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Textarea } from "../components/ui/textarea";
+import { Badge } from "../components/ui/badge";
 import { McpInfoPanel } from "../components/McpInfoPanel";
 import { AiPanel } from "../components/ai/AiPanel";
 import { ReferenceSongSection } from "../components/track/ReferenceSongSection";
@@ -11,9 +14,6 @@ import { PromptLabSection } from "../components/track/PromptLabSection";
 import { SunoInputForm } from "../components/track/SunoInputForm";
 import { NotesSection } from "../components/track/NotesSection";
 import { useAlbumStore } from "../store/useAlbumStore";
-
-const inputClass =
-  "w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring transition-colors";
 
 function formatDate(iso: string) {
   return new Intl.DateTimeFormat(undefined, {
@@ -112,8 +112,7 @@ export function TrackDetail() {
         <div className="grid grid-cols-3 gap-3">
           <div className="space-y-1">
             <label className="text-xs text-muted-foreground">Genre</label>
-            <input
-              className={inputClass}
+            <Input
               value={editGenre}
               onChange={(e) => setEditGenre(e.target.value)}
               placeholder="Optional"
@@ -121,8 +120,7 @@ export function TrackDetail() {
           </div>
           <div className="space-y-1">
             <label className="text-xs text-muted-foreground">BPM</label>
-            <input
-              className={inputClass}
+            <Input
               value={editBpm}
               onChange={(e) => setEditBpm(e.target.value)}
               placeholder="120"
@@ -133,8 +131,7 @@ export function TrackDetail() {
           </div>
           <div className="space-y-1">
             <label className="text-xs text-muted-foreground">Key</label>
-            <input
-              className={inputClass}
+            <Input
               value={editKey}
               onChange={(e) => setEditKey(e.target.value)}
               placeholder="C major"
@@ -143,8 +140,7 @@ export function TrackDetail() {
         </div>
         <div className="space-y-1">
           <label className="text-xs text-muted-foreground">Concept</label>
-          <textarea
-            className={`${inputClass} resize-none`}
+          <Textarea
             value={editConcept}
             onChange={(e) => setEditConcept(e.target.value)}
             placeholder="What's this track about?"
@@ -153,8 +149,7 @@ export function TrackDetail() {
         </div>
         <div className="space-y-1">
           <label className="text-xs text-muted-foreground">Lyrics</label>
-          <textarea
-            className={`${inputClass} resize-none`}
+          <Textarea
             value={editLyrics}
             onChange={(e) => setEditLyrics(e.target.value)}
             placeholder="Write your lyrics here..."
@@ -204,14 +199,12 @@ export function TrackDetail() {
                 )}
                 <div className="flex flex-wrap items-center gap-1.5 pt-1">
                   {result.rating && (
-                    <span className="inline-flex w-fit items-center rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-                      Rating: {result.rating}/5
-                    </span>
+                    <Badge variant="secondary">Rating: {result.rating}/5</Badge>
                   )}
                   {result.isBestVersion && (
-                    <span className="inline-flex w-fit items-center rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 px-2 py-0.5 text-xs font-medium">
+                    <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
                       Best version
-                    </span>
+                    </Badge>
                   )}
                   {result.memo && (
                     <span className="text-xs text-muted-foreground">{result.memo}</span>

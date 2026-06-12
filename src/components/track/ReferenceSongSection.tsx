@@ -1,12 +1,11 @@
 import { useState } from "react";
 import { Plus, Trash2, Music2 } from "lucide-react";
 import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import { Textarea } from "../ui/textarea";
 import { useAlbumStore } from "../../store/useAlbumStore";
 import type { Track } from "../../lib/types/album";
 import type { ReferenceSong } from "../../lib/types/reference";
-
-const inputClass =
-  "w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring transition-colors";
 
 interface Props {
   track: Track;
@@ -73,8 +72,7 @@ export function ReferenceSongSection({ track }: Props) {
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1">
               <label className="text-xs text-muted-foreground">곡 제목 *</label>
-              <input
-                className={inputClass}
+              <Input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="예: Blinding Lights"
@@ -84,8 +82,7 @@ export function ReferenceSongSection({ track }: Props) {
             </div>
             <div className="space-y-1">
               <label className="text-xs text-muted-foreground">아티스트</label>
-              <input
-                className={inputClass}
+              <Input
                 value={artist}
                 onChange={(e) => setArtist(e.target.value)}
                 placeholder="예: The Weeknd"
@@ -94,8 +91,7 @@ export function ReferenceSongSection({ track }: Props) {
           </div>
           <div className="space-y-1">
             <label className="text-xs text-muted-foreground">메모</label>
-            <textarea
-              className={`${inputClass} resize-none`}
+            <Textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="어떤 요소를 참고하고 싶은지 적어주세요"

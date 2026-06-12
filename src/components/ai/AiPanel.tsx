@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Check } from "lucide-react";
+import { Check, AlertCircle } from "lucide-react";
 import { Button } from "../ui/button";
+import { Badge } from "../ui/badge";
+import { Alert, AlertDescription } from "../ui/alert";
 import { useConfigStore } from "../../store/useConfigStore";
 import { useAlbumStore } from "../../store/useAlbumStore";
 import { callClaude, AnthropicApiError } from "../../lib/ai/anthropic";
@@ -134,9 +136,10 @@ export function AiPanel({ track, album }: AiPanelProps) {
 
       {/* Error */}
       {errorMessage && !isLoading && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-400">
-          {errorMessage}
-        </div>
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{errorMessage}</AlertDescription>
+        </Alert>
       )}
 
       {/* Result */}
@@ -146,16 +149,15 @@ export function AiPanel({ track, album }: AiPanelProps) {
             <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
               결과
             </label>
-            <span
-              className={[
-                "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
+            <Badge
+              className={
                 parseStatus === "success"
                   ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                  : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
-              ].join(" ")}
+                  : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+              }
             >
               {parseStatus === "success" ? "Parsed" : "Parse failed"}
-            </span>
+            </Badge>
           </div>
           <pre className="rounded-lg border bg-muted/40 p-3 text-xs font-mono whitespace-pre-wrap overflow-auto max-h-64 text-foreground">
             {rawText}
