@@ -1,12 +1,11 @@
 import { useState } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import { Textarea } from "../ui/textarea";
 import { useAlbumStore } from "../../store/useAlbumStore";
 import type { Track } from "../../lib/types/album";
 import type { SunoResult } from "../../lib/types/suno";
-
-const inputClass =
-  "w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring transition-colors";
 
 const RATING_OPTIONS: { value: SunoResult["rating"]; label: string }[] = [
   { value: 1, label: "★" },
@@ -81,8 +80,7 @@ export function SunoInputForm({ track }: Props) {
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1">
               <label className="text-xs text-muted-foreground">버전 라벨</label>
-              <input
-                className={inputClass}
+              <Input
                 value={versionLabel}
                 onChange={(e) => setVersionLabel(e.target.value)}
                 placeholder={`v${track.sunoResults.length + 1}`}
@@ -91,8 +89,7 @@ export function SunoInputForm({ track }: Props) {
             </div>
             <div className="space-y-1">
               <label className="text-xs text-muted-foreground">URL</label>
-              <input
-                className={inputClass}
+              <Input
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 placeholder="https://suno.ai/..."
@@ -124,8 +121,7 @@ export function SunoInputForm({ track }: Props) {
 
           <div className="space-y-1">
             <label className="text-xs text-muted-foreground">메모</label>
-            <textarea
-              className={`${inputClass} resize-none`}
+            <Textarea
               value={memo}
               onChange={(e) => setMemo(e.target.value)}
               placeholder="느낌, 수정 포인트 등"

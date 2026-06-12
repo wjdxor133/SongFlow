@@ -4,6 +4,7 @@ import type { ChordProgression, GroovePattern } from "../../lib/types/music";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Play, Square, Plus, X } from "lucide-react";
 import * as Tone from "tone";
+import { Input } from "../ui/input";
 
 const CHORD_COLORS: Record<string, string> = {
   C: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300",
@@ -166,8 +167,6 @@ function GrooveCard({ gp, isSelected }: { gp: GroovePattern; isSelected: boolean
   );
 }
 
-const inputClass =
-  "w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring transition-colors";
 
 function AddChordProgressionForm({ onAdd }: { onAdd: (cp: Omit<ChordProgression, "id" | "isDefault">) => void }) {
   const [open, setOpen] = useState(false);
@@ -218,8 +217,7 @@ function AddChordProgressionForm({ onAdd }: { onAdd: (cp: Omit<ChordProgression,
       </div>
       <div>
         <label className="text-xs text-muted-foreground">코드 (공백으로 구분) *</label>
-        <input
-          className={inputClass}
+        <Input
           value={chordsInput}
           onChange={(e) => setChordsInput(e.target.value)}
           placeholder="Cm Fm Ab Bb"
@@ -230,8 +228,7 @@ function AddChordProgressionForm({ onAdd }: { onAdd: (cp: Omit<ChordProgression,
       <div className="grid grid-cols-3 gap-2">
         <div>
           <label className="text-xs text-muted-foreground">이름</label>
-          <input
-            className={inputClass}
+          <Input
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="선택 사항"
@@ -239,8 +236,7 @@ function AddChordProgressionForm({ onAdd }: { onAdd: (cp: Omit<ChordProgression,
         </div>
         <div>
           <label className="text-xs text-muted-foreground">Key</label>
-          <input
-            className={inputClass}
+          <Input
             value={key}
             onChange={(e) => setKey(e.target.value)}
             placeholder="C"
@@ -248,8 +244,7 @@ function AddChordProgressionForm({ onAdd }: { onAdd: (cp: Omit<ChordProgression,
         </div>
         <div>
           <label className="text-xs text-muted-foreground">BPM</label>
-          <input
-            className={inputClass}
+          <Input
             value={bpm}
             onChange={(e) => setBpm(e.target.value)}
             placeholder="100"

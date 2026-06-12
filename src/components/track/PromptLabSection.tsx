@@ -1,12 +1,10 @@
 import { useState } from "react";
 import { Copy, Check, Pencil, Trash2, X } from "lucide-react";
 import { Button } from "../ui/button";
+import { Textarea } from "../ui/textarea";
 import { useAlbumStore } from "../../store/useAlbumStore";
 import type { Track } from "../../lib/types/album";
 import type { GeneratedPrompt } from "../../lib/types/prompt";
-
-const inputClass =
-  "w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring transition-colors";
 
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
@@ -106,8 +104,7 @@ function PromptCard({ prompt, onDelete, onSave }: PromptCardProps) {
             <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
               Style of Music
             </label>
-            <textarea
-              className={`${inputClass} resize-none`}
+            <Textarea
               value={editStyle}
               onChange={(e) => setEditStyle(e.target.value)}
               rows={3}
@@ -117,8 +114,7 @@ function PromptCard({ prompt, onDelete, onSave }: PromptCardProps) {
             <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
               Lyrics
             </label>
-            <textarea
-              className={`${inputClass} resize-none`}
+            <Textarea
               value={editLyrics}
               onChange={(e) => setEditLyrics(e.target.value)}
               rows={6}
