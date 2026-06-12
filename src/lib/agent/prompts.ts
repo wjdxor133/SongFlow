@@ -99,6 +99,31 @@ export function buildPrompt(task: AgentTask, track: Track, album: Album): Prompt
           2
         ),
       };
+
+    case "generate_chord_progression": {
+      const keyHint = track.key ? `Key: ${track.key}` : "";
+      const bpmHint = track.bpm ? `BPM: ${track.bpm}` : "";
+      const extra = [keyHint, bpmHint].filter(Boolean).join("\n");
+      return {
+        instruction: `You are a music theory expert. Generate 3 chord progressions for the following track.\n\n${base}${extra ? "\n" + extra : ""}\n\nReturn ONLY valid JSON (no markdown, no explanation) matching the schema below:`,
+        outputSchema: JSON.stringify(
+          {
+            progressions: [
+              {
+                name: "string — short descriptive name (e.g. 'Dark Minor Loop')",
+                chords: ["string — chord names using standard notation (e.g. Cm, Fm, Ab, Bb)"],
+                key: "string — root key (e.g. C)",
+                mode: "major | minor",
+                bpm: "number | null — suggested BPM",
+                description: "string — brief description of the mood/feel",
+              },
+            ],
+          },
+          null,
+          2
+        ),
+      };
+    }
   }
 }
 

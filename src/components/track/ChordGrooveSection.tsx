@@ -1,6 +1,13 @@
 import { useAlbumStore } from "../../store/useAlbumStore";
+import { useConfigStore } from "../../store/useConfigStore";
 import type { Track } from "../../lib/types/album";
 import type { ChordProgression, GroovePattern } from "../../lib/types/music";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { Play, Square, Plus, X, Sparkles, Loader2 } from "lucide-react";
+import * as Tone from "tone";
+import { callClaude } from "../../lib/ai/anthropic";
+import { buildPrompt } from "../../lib/agent/prompts";
+import type { Album } from "../../lib/types/album";
 
 const CHORD_COLORS: Record<string, string> = {
   C: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300",
@@ -12,12 +19,59 @@ const CHORD_COLORS: Record<string, string> = {
   B: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300",
 };
 
+// Chord name → note array (piano voicing, octave 4)
+const CHORD_INTERVALS: Record<string, number[]> = {
+  "": [0, 4, 7],         // major
+  "m": [0, 3, 7],        // minor
+  "7": [0, 4, 7, 10],    // dominant 7th
+  "maj7": [0, 4, 7, 11], // major 7th
+  "m7": [0, 3, 7, 10],   // minor 7th
+  "dim": [0, 3, 6],      // diminished
+  "aug": [0, 4, 8],      // augmented
+  "sus2": [0, 2, 7],     // suspended 2nd
+  "sus4": [0, 5, 7],     // suspended 4th
+};
+
+const NOTE_SEMITONES: Record<string, number> = {
+  C: 0, "C#": 1, Db: 1, D: 2, "D#": 3, Eb: 3, E: 4,
+  F: 5, "F#": 6, Gb: 6, G: 7, "G#": 8, Ab: 8, A: 9,
+  "A#": 10, Bb: 10, B: 11,
+};
+
+const SEMITONE_TO_NOTE = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+
+function parseChordToNotes(chord: string): string[] {
+  // Parse root note (e.g. "Cm7" → root="C", quality="m7")
+  const match = chord.match(/^([A-G][b#]?)(.*)/);
+  if (!match) return ["C4", "E4", "G4"];
+
+  const root = match[1];
+  const quality = match[2] ?? "";
+  const intervals = CHORD_INTERVALS[quality] ?? CHORD_INTERVALS[""];
+  const rootSemitone = NOTE_SEMITONES[root] ?? 0;
+
+  return intervals.map((interval) => {
+    const semitone = (rootSemitone + interval) % 12;
+    const octave = rootSemitone + interval >= 12 ? 5 : 4;
+    return `${SEMITONE_TO_NOTE[semitone]}${octave}`;
+  });
+}
+
 function chordColor(chord: string) {
   const root = chord.replace(/[^A-Gb#]/g, "")[0] ?? "C";
   return CHORD_COLORS[root] ?? "bg-muted text-muted-foreground";
 }
 
-function ChordCard({ cp, isSelected }: { cp: ChordProgression; isSelected: boolean }) {
+interface ChordCardProps {
+  cp: ChordProgression;
+  isSelected: boolean;
+  playingIndex: number | null;
+  isPlaying: boolean;
+  onPlay: () => void;
+  onStop: () => void;
+}
+
+function ChordCard({ cp, isSelected, playingIndex, isPlaying, onPlay, onStop }: ChordCardProps) {
   return (
     <div
       className={[
@@ -34,9 +88,22 @@ function ChordCard({ cp, isSelected }: { cp: ChordProgression; isSelected: boole
             </span>
           )}
         </div>
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <span>{cp.key} {cp.mode}</span>
-          {cp.bpm && <span>· {cp.bpm} BPM</span>}
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <span>{cp.key} {cp.mode}</span>
+            {cp.bpm && <span>· {cp.bpm} BPM</span>}
+          </div>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              isPlaying ? onStop() : onPlay();
+            }}
+            className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+            title={isPlaying ? "정지" : "재생"}
+          >
+            {isPlaying ? <Square className="h-3 w-3 fill-current" /> : <Play className="h-3 w-3 fill-current" />}
+          </button>
         </div>
       </div>
       <div className="flex flex-wrap gap-1.5">
@@ -44,8 +111,9 @@ function ChordCard({ cp, isSelected }: { cp: ChordProgression; isSelected: boole
           <span
             key={i}
             className={[
-              "inline-flex items-center rounded px-2 py-0.5 text-xs font-mono font-semibold",
+              "inline-flex items-center rounded px-2 py-0.5 text-xs font-mono font-semibold transition-all",
               chordColor(chord),
+              isPlaying && playingIndex === i ? "ring-2 ring-primary scale-110" : "",
             ].join(" ")}
           >
             {chord}
@@ -102,28 +170,186 @@ function GrooveCard({ gp, isSelected }: { gp: GroovePattern; isSelected: boolean
   );
 }
 
-interface Props {
-  track: Track;
+const inputClass =
+  "w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring transition-colors";
+
+function AddChordProgressionForm({ onAdd }: { onAdd: (cp: Omit<ChordProgression, "id" | "isDefault">) => void }) {
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState("");
+  const [chordsInput, setChordsInput] = useState("");
+  const [key, setKey] = useState("");
+  const [mode, setMode] = useState<"major" | "minor">("minor");
+  const [bpm, setBpm] = useState("");
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const chords = chordsInput.trim().split(/\s+/).filter(Boolean);
+    if (!chords.length) return;
+    onAdd({
+      name: name.trim() || chordsInput.trim(),
+      chords,
+      key: key.trim() || (chords[0]?.[0] ?? "C"),
+      mode,
+      bpm: bpm ? Number(bpm) : undefined,
+    });
+    setName("");
+    setChordsInput("");
+    setKey("");
+    setBpm("");
+    setOpen(false);
+  }
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed py-2.5 text-xs text-muted-foreground hover:text-foreground hover:border-border transition-colors"
+      >
+        <Plus className="h-3.5 w-3.5" />
+        코드 진행 추가
+      </button>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="rounded-lg border bg-muted/20 p-3 flex flex-col gap-2.5">
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-medium">새 코드 진행</span>
+        <button type="button" onClick={() => setOpen(false)}>
+          <X className="h-3.5 w-3.5 text-muted-foreground" />
+        </button>
+      </div>
+      <div>
+        <label className="text-xs text-muted-foreground">코드 (공백으로 구분) *</label>
+        <input
+          className={inputClass}
+          value={chordsInput}
+          onChange={(e) => setChordsInput(e.target.value)}
+          placeholder="Cm Fm Ab Bb"
+          required
+          autoFocus
+        />
+      </div>
+      <div className="grid grid-cols-3 gap-2">
+        <div>
+          <label className="text-xs text-muted-foreground">이름</label>
+          <input
+            className={inputClass}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="선택 사항"
+          />
+        </div>
+        <div>
+          <label className="text-xs text-muted-foreground">Key</label>
+          <input
+            className={inputClass}
+            value={key}
+            onChange={(e) => setKey(e.target.value)}
+            placeholder="C"
+          />
+        </div>
+        <div>
+          <label className="text-xs text-muted-foreground">BPM</label>
+          <input
+            className={inputClass}
+            value={bpm}
+            onChange={(e) => setBpm(e.target.value)}
+            placeholder="100"
+            type="number"
+            min={1}
+            max={300}
+          />
+        </div>
+      </div>
+      <div className="flex items-center gap-2">
+        <label className="text-xs text-muted-foreground">모드</label>
+        <button
+          type="button"
+          onClick={() => setMode(mode === "major" ? "minor" : "major")}
+          className="text-xs px-2 py-0.5 rounded-full border hover:bg-muted transition-colors"
+        >
+          {mode === "major" ? "Major" : "Minor"}
+        </button>
+      </div>
+      <button
+        type="submit"
+        className="self-end rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+      >
+        추가
+      </button>
+    </form>
+  );
 }
 
-export function ChordGrooveSection({ track }: Props) {
+interface Props {
+  track: Track;
+  album: Album;
+}
+
+export function ChordGrooveSection({ track, album }: Props) {
   const updateTrack = useAlbumStore((s) => s.updateTrack);
+  const apiKey = useConfigStore((s) => s.config.anthropicApiKey);
+  const [playingCpId, setPlayingCpId] = useState<string | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generateError, setGenerateError] = useState<string | null>(null);
+  const [playingIndex, setPlayingIndex] = useState<number | null>(null);
+  const synthRef = useRef<Tone.PolySynth | null>(null);
+  const seqRef = useRef<Tone.Sequence | null>(null);
+
+  const stopPlayback = useCallback(() => {
+    seqRef.current?.stop();
+    seqRef.current?.dispose();
+    seqRef.current = null;
+    synthRef.current?.releaseAll();
+    Tone.getTransport().stop();
+    setPlayingCpId(null);
+    setPlayingIndex(null);
+  }, []);
+
+  useEffect(() => {
+    return () => stopPlayback();
+  }, [stopPlayback]);
+
+  async function playChordProgression(cp: ChordProgression) {
+    stopPlayback();
+
+    await Tone.start();
+
+    const synth = new Tone.PolySynth(Tone.Synth, {
+      oscillator: { type: "triangle" },
+      envelope: { attack: 0.05, decay: 0.3, sustain: 0.4, release: 0.8 },
+      volume: -8,
+    }).toDestination();
+    synthRef.current = synth;
+
+    const bpm = cp.bpm ?? 100;
+    Tone.getTransport().bpm.value = bpm;
+
+    let index = 0;
+    const seq = new Tone.Sequence(
+      (time) => {
+        const chord = cp.chords[index];
+        const notes = parseChordToNotes(chord);
+        synth.triggerAttackRelease(notes, "2n", time);
+        setPlayingIndex(index);
+        index = (index + 1) % cp.chords.length;
+      },
+      cp.chords.map((_, i) => i),
+      "1n"
+    );
+    seqRef.current = seq;
+
+    setPlayingCpId(cp.id);
+    setPlayingIndex(0);
+
+    seq.start(0);
+    Tone.getTransport().start();
+  }
 
   const hasChords = track.chordProgressions.length > 0;
   const hasGrooves = track.groovePatterns.length > 0;
-
-  if (!hasChords && !hasGrooves) {
-    return (
-      <div className="flex flex-col gap-3">
-        <h2 className="text-sm font-semibold">Chord & Groove</h2>
-        <div className="rounded-lg border border-dashed py-6 text-center">
-          <p className="text-xs text-muted-foreground">
-            MCP 서버나 AI 패널을 통해 코드 진행과 그루브 패턴을 생성하면 여기에 표시돼요.
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   async function selectChord(id: string) {
     await updateTrack(track.id, { selectedChordProgressionId: id });
@@ -133,34 +359,99 @@ export function ChordGrooveSection({ track }: Props) {
     await updateTrack(track.id, { selectedGroovePatternId: id });
   }
 
+  async function handleAddChordProgression(cp: Omit<ChordProgression, "id" | "isDefault">) {
+    const newCp: ChordProgression = {
+      ...cp,
+      id: crypto.randomUUID(),
+      isDefault: false,
+    };
+    await updateTrack(track.id, {
+      chordProgressions: [...track.chordProgressions, newCp],
+    });
+  }
+
+  async function handleGenerate() {
+    if (!apiKey) {
+      setGenerateError("Settings에서 Anthropic API 키를 입력해주세요.");
+      return;
+    }
+    setIsGenerating(true);
+    setGenerateError(null);
+    try {
+      const { instruction, outputSchema } = buildPrompt("generate_chord_progression", track, album);
+      const result = await callClaude(apiKey, [{ role: "user", content: `${instruction}\n\n${outputSchema}` }]);
+      if (result.parseStatus === "failed") {
+        setGenerateError("응답 파싱 실패. 다시 시도해주세요.");
+        return;
+      }
+      const data = result.parsedJson as { progressions: Array<{ name: string; chords: string[]; key: string; mode: "major" | "minor"; bpm: number | null; }> };
+      const newProgressions: ChordProgression[] = (data.progressions ?? []).map((p) => ({
+        id: crypto.randomUUID(),
+        name: p.name,
+        chords: p.chords,
+        key: p.key,
+        mode: p.mode,
+        bpm: p.bpm ?? undefined,
+        isDefault: false,
+      }));
+      await updateTrack(track.id, {
+        chordProgressions: [...track.chordProgressions, ...newProgressions],
+      });
+    } catch {
+      setGenerateError("API 호출 실패. API 키와 네트워크를 확인해주세요.");
+    } finally {
+      setIsGenerating(false);
+    }
+  }
+
   return (
     <div className="flex flex-col gap-4">
-      {hasChords && (
-        <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold">
             코드 진행{" "}
-            <span className="text-sm font-normal text-muted-foreground">
-              ({track.chordProgressions.length})
-            </span>
+            {hasChords && (
+              <span className="text-sm font-normal text-muted-foreground">
+                ({track.chordProgressions.length})
+              </span>
+            )}
           </h2>
-          <div className="flex flex-col gap-2">
-            {track.chordProgressions.map((cp) => (
-              <button
-                key={cp.id}
-                className="text-left"
-                onClick={() => selectChord(cp.id)}
-              >
-                <ChordCard
-                  cp={cp}
-                  isSelected={track.selectedChordProgressionId === cp.id}
-                />
-              </button>
-            ))}
-          </div>
+          <button
+            type="button"
+            onClick={handleGenerate}
+            disabled={isGenerating}
+            className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50"
+          >
+            {isGenerating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+            AI 생성
+          </button>
         </div>
-      )}
+        {generateError && (
+          <p className="text-xs text-destructive">{generateError}</p>
+        )}
+        <div className="flex flex-col gap-2">
+          {track.chordProgressions.map((cp) => (
+            <button
+              key={cp.id}
+              className="text-left"
+              onClick={() => selectChord(cp.id)}
+            >
+              <ChordCard
+                cp={cp}
+                isSelected={track.selectedChordProgressionId === cp.id}
+                playingIndex={playingCpId === cp.id ? playingIndex : null}
+                isPlaying={playingCpId === cp.id}
+                onPlay={() => playChordProgression(cp)}
+                onStop={stopPlayback}
+              />
+            </button>
+          ))}
+          <AddChordProgressionForm onAdd={handleAddChordProgression} />
+        </div>
+      </div>
 
       {hasGrooves && (
+
         <div className="flex flex-col gap-3">
           <h2 className="text-sm font-semibold">
             그루브 패턴{" "}
