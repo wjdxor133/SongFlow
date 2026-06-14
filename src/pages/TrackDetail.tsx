@@ -13,6 +13,7 @@ import { ChordGrooveSection } from "../components/track/ChordGrooveSection";
 import { PromptLabSection } from "../components/track/PromptLabSection";
 import { SunoInputForm } from "../components/track/SunoInputForm";
 import { NotesSection } from "../components/track/NotesSection";
+import { ReferenceCoachSection } from "../components/track/ReferenceCoachSection";
 import { useAlbumStore } from "../store/useAlbumStore";
 
 function formatDate(iso: string) {
@@ -163,6 +164,9 @@ export function TrackDetail() {
 
       {/* References */}
       <ReferenceSongSection track={track} />
+
+      {/* Reference Coach */}
+      <ReferenceCoachSection track={track} />
 
       {/* Song Brief */}
       <SongBriefSection track={track} />
