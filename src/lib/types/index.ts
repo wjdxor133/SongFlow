@@ -4,4 +4,5 @@ export * from "./music";
 export * from "./prompt";
 export * from "./project";
 export * from "./reference";
+export * from "./reference-coach";
 export * from "./suno";

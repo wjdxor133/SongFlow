@@ -3,6 +3,7 @@ import type { ChordProgression, GroovePattern, SoundKeywordGroup } from "./music
 import type { GeneratedPrompt, ResultFeedback, PromptRefinement } from "./prompt";
 import type { ReferenceSong, ReferenceAnalysis } from "./reference";
 import type { SunoResult } from "./suno";
+import type { ReferenceBrief, TrackPlan, LearningMission } from "./reference-coach";
 
 export type Album = {
   id: string;
@@ -43,12 +44,16 @@ export type Track = {
   agentRequests: AgentRequest[];
   agentResponses: AgentResponse[];
   notes: TrackNote[];
+  referenceBriefs?: ReferenceBrief[];
+  trackPlans?: TrackPlan[];
+  learningMissions?: LearningMission[];
   createdAt: string;
   updatedAt: string;
 };
 
 export type StorageData = {
   version: number;
+  schemaVersion: number;
   albums: Album[];
   tracks: Track[];
 };

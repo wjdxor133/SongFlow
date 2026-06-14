@@ -41,18 +41,38 @@ export type Track = {
   agentRequests: unknown[];
   agentResponses: unknown[];
   notes: TrackNote[];
+  referenceBriefs?: unknown[];
+  trackPlans?: unknown[];
+  learningMissions?: unknown[];
   createdAt: string;
   updatedAt: string;
 };
 
+export const CURRENT_SCHEMA_VERSION = 3;
+
 export type StorageData = {
   version: number;
+  schemaVersion: number;
   albums: Album[];
   tracks: Track[];
 };
 
+function migrate(data: StorageData): StorageData {
+  if ((data.schemaVersion ?? 0) >= CURRENT_SCHEMA_VERSION) return data;
+  return {
+    ...data,
+    schemaVersion: CURRENT_SCHEMA_VERSION,
+    tracks: data.tracks.map((t) => ({
+      ...t,
+      referenceBriefs: t.referenceBriefs ?? [],
+      trackPlans: t.trackPlans ?? [],
+      learningMissions: t.learningMissions ?? [],
+    })),
+  };
+}
+
 function emptyStorage(): StorageData {
-  return { version: 0, albums: [], tracks: [] };
+  return { version: 0, schemaVersion: CURRENT_SCHEMA_VERSION, albums: [], tracks: [] };
 }
 
 export function loadData(): StorageData {
@@ -60,7 +80,8 @@ export function loadData(): StorageData {
   if (!fs.existsSync(filePath)) return emptyStorage();
   try {
     const raw = fs.readFileSync(filePath, "utf-8");
-    return JSON.parse(raw) as StorageData;
+    const parsed = JSON.parse(raw) as StorageData;
+    return migrate(parsed);
   } catch {
     return emptyStorage();
   }
