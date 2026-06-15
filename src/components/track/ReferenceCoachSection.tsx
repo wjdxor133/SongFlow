@@ -72,6 +72,7 @@ export function ReferenceCoachSection({ track }: ReferenceCoachSectionProps) {
   const addReferenceBrief = useAlbumStore((s) => s.addReferenceBrief);
   const addTrackPlan = useAlbumStore((s) => s.addTrackPlan);
   const addLearningMissions = useAlbumStore((s) => s.addLearningMissions);
+  const updateLearningMission = useAlbumStore((s) => s.updateLearningMission);
   const updateTrack = useAlbumStore((s) => s.updateTrack);
   const addSunoPromptTryout = useAlbumStore((s) => s.addSunoPromptTryout);
 
@@ -606,6 +607,25 @@ export function ReferenceCoachSection({ track }: ReferenceCoachSectionProps) {
                 className="rounded-md border bg-background p-3 text-xs flex flex-col gap-1"
               >
                 <div className="flex items-center gap-2">
+                  <button
+                    onClick={() =>
+                      updateLearningMission(track.id, mission.id, {
+                        completed: !mission.completed,
+                        completedAt: !mission.completed ? new Date().toISOString() : undefined,
+                      })
+                    }
+                    className={[
+                      "h-4 w-4 shrink-0 rounded border transition-colors",
+                      mission.completed
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-border bg-background hover:border-primary",
+                    ].join(" ")}
+                    title={mission.completed ? "완료 취소" : "완료로 표시"}
+                  >
+                    {mission.completed && (
+                      <Check className="h-3 w-3 m-auto" />
+                    )}
+                  </button>
                   <span
                     className={mission.completed ? "line-through text-muted-foreground" : "font-medium"}
                   >
@@ -615,7 +635,9 @@ export function ReferenceCoachSection({ track }: ReferenceCoachSectionProps) {
                     {CATEGORY_LABELS[mission.category] ?? mission.category}
                   </Badge>
                 </div>
-                <p className="text-muted-foreground">{mission.objective}</p>
+                <p className={`text-muted-foreground ${mission.completed ? "opacity-60" : ""}`}>
+                  {mission.objective}
+                </p>
               </div>
             ))}
           </div>
