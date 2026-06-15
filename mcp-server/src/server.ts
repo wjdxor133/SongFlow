@@ -504,6 +504,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case "save_reference_brief": {
         const t = now();
+        if (!loadData().tracks.find((tr) => tr.id === a.trackId)) {
+          return { content: [{ type: "text", text: `Track ${a.trackId} not found` }], isError: true };
+        }
         const brief = {
           id: randomId(),
           trackId: String(a.trackId),
@@ -549,19 +552,34 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case "save_track_plan": {
         const t = now();
+        if (!loadData().tracks.find((tr) => tr.id === a.trackId)) {
+          return { content: [{ type: "text", text: `Track ${a.trackId} not found` }], isError: true };
+        }
+        const rawSoundKw = (a.soundKeywords ?? {}) as Record<string, unknown>;
+        const toStrArr = (v: unknown): string[] =>
+          Array.isArray(v) ? v.map(String) : [];
         const plan = {
           id: randomId(),
           trackId: String(a.trackId),
           referenceBriefId: a.referenceBriefId ? String(a.referenceBriefId) : undefined,
           title: String(a.title),
           directionSummary: String(a.directionSummary),
-          bpmSuggestions: Array.isArray(a.bpmSuggestions) ? a.bpmSuggestions.map(Number) : [],
+          bpmSuggestions: Array.isArray(a.bpmSuggestions)
+            ? a.bpmSuggestions.map(Number).filter(Number.isFinite)
+            : [],
           keySuggestions: Array.isArray(a.keySuggestions) ? a.keySuggestions.map(String) : [],
           chordProgressionSuggestions: Array.isArray(a.chordProgressionSuggestions) ? a.chordProgressionSuggestions : [],
           grooveSuggestions: Array.isArray(a.grooveSuggestions) ? a.grooveSuggestions : [],
           bassDirection: a.bassDirection ?? { summary: "", rootMotionIdeas: [], rhythmIdeas: [], beginnerTips: [] },
           toplineDirection: a.toplineDirection ?? { summary: "", hookIdeas: [], rhythmIdeas: [], vocalToneIdeas: [], sunoTips: [] },
-          soundKeywords: a.soundKeywords ?? { drums: [], bass: [], melody: [], harmony: [], fx: [], vocal: [] },
+          soundKeywords: {
+            drums: toStrArr(rawSoundKw.drums),
+            bass: toStrArr(rawSoundKw.bass),
+            melody: toStrArr(rawSoundKw.melody),
+            harmony: toStrArr(rawSoundKw.harmony),
+            fx: toStrArr(rawSoundKw.fx),
+            vocal: toStrArr(rawSoundKw.vocal),
+          },
           arrangementNotes: a.arrangementNotes ?? {},
           beginnerExplanation: a.beginnerExplanation ? String(a.beginnerExplanation) : "",
           disclaimer: a.disclaimer ? String(a.disclaimer) : "이 플랜은 AI 추론 기반입니다.",
@@ -589,13 +607,17 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case "save_learning_missions": {
         const t = now();
+        if (!loadData().tracks.find((tr) => tr.id === a.trackId)) {
+          return { content: [{ type: "text", text: `Track ${a.trackId} not found` }], isError: true };
+        }
+        const VALID_CATS = ["harmony", "drums", "bass", "topline", "sound_design", "arrangement", "suno_prompt"];
         const rawMissions = Array.isArray(a.missions) ? a.missions as Record<string, unknown>[] : [];
         const missions = rawMissions.map((m) => ({
           id: randomId(),
           trackId: String(a.trackId),
           trackPlanId: a.trackPlanId ? String(a.trackPlanId) : undefined,
           referenceBriefId: a.referenceBriefId ? String(a.referenceBriefId) : undefined,
-          category: String(m.category ?? "harmony"),
+          category: VALID_CATS.includes(String(m.category)) ? String(m.category) : "harmony",
           title: String(m.title ?? ""),
           objective: String(m.objective ?? ""),
           explanation: String(m.explanation ?? ""),
@@ -630,6 +652,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case "update_learning_mission": {
         const t = now();
+        if (!loadData().tracks.find((tr) => tr.id === a.trackId)) {
+          return { content: [{ type: "text", text: `Track ${a.trackId} not found` }], isError: true };
+        }
         withCAS((data) => ({
           ...data,
           tracks: data.tracks.map((track) => {
