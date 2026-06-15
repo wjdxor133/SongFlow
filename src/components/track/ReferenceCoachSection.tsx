@@ -34,9 +34,31 @@ type GenerationStep = "idle" | "brief" | "plan" | "missions";
 
 const STEP_LABELS: Record<GenerationStep, string> = {
   idle: "",
-  brief: "Reference Brief 분석 중...",
-  plan: "Track Plan 작성 중...",
-  missions: "학습 미션 생성 중...",
+  brief: "1/3 Reference Brief 분석 중...",
+  plan: "2/3 Track Plan 작성 중...",
+  missions: "3/3 학습 미션 생성 중...",
+};
+
+const CATEGORY_LABELS: Record<string, string> = {
+  harmony: "화성",
+  drums: "드럼",
+  bass: "베이스",
+  topline: "탑라인",
+  sound_design: "사운드 디자인",
+  arrangement: "편곡",
+  suno_prompt: "Suno 프롬프트",
+};
+
+const CONFIDENCE_LABELS: Record<string, string> = {
+  high: "높음",
+  medium: "보통",
+  low: "낮음",
+};
+
+const CONFIDENCE_STYLES: Record<string, string> = {
+  high: "border-green-500 text-green-600",
+  medium: "",
+  low: "border-orange-400 text-orange-500",
 };
 
 interface ReferenceCoachSectionProps {
@@ -379,15 +401,20 @@ export function ReferenceCoachSection({ track }: ReferenceCoachSectionProps) {
           <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             Reference Brief
           </h3>
-          {referenceBriefs.length > 0 && (
+          {generationStep === "brief" ? (
+            <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <span className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
+              분석 중
+            </span>
+          ) : referenceBriefs.length > 0 ? (
             <Badge variant="secondary">{referenceBriefs.length}개</Badge>
-          )}
+          ) : null}
         </div>
-        {referenceBriefs.length === 0 ? (
+        {referenceBriefs.length === 0 && generationStep !== "brief" ? (
           <p className="text-xs text-muted-foreground">
             아직 생성된 Reference Brief가 없어요. 위에서 레퍼런스 곡을 입력하고 생성해보세요.
           </p>
-        ) : (
+        ) : referenceBriefs.length > 0 ? (
           <div className="flex flex-col gap-2">
             {referenceBriefs.map((brief) => (
               <div key={brief.id} className="rounded-md border bg-background p-3 text-xs flex flex-col gap-1.5">
@@ -395,17 +422,8 @@ export function ReferenceCoachSection({ track }: ReferenceCoachSectionProps) {
                   <span className="font-medium">
                     {brief.artist} — {brief.songTitle}
                   </span>
-                  <Badge
-                    variant="outline"
-                    className={
-                      brief.confidence === "high"
-                        ? "border-green-500 text-green-600"
-                        : brief.confidence === "low"
-                          ? "border-orange-400 text-orange-500"
-                          : ""
-                    }
-                  >
-                    {brief.confidence === "high" ? "높음" : brief.confidence === "low" ? "낮음" : "보통"}
+                  <Badge variant="outline" className={CONFIDENCE_STYLES[brief.confidence] ?? ""}>
+                    {CONFIDENCE_LABELS[brief.confidence] ?? brief.confidence}
                   </Badge>
                 </div>
                 <p className="text-muted-foreground">{brief.summary}</p>
@@ -422,7 +440,7 @@ export function ReferenceCoachSection({ track }: ReferenceCoachSectionProps) {
               </div>
             ))}
           </div>
-        )}
+        ) : null}
       </div>
 
       {/* Track Plan 카드 */}
@@ -431,32 +449,28 @@ export function ReferenceCoachSection({ track }: ReferenceCoachSectionProps) {
           <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             Track Plan
           </h3>
-          {trackPlans.length > 0 && (
+          {generationStep === "plan" ? (
+            <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <span className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
+              작성 중
+            </span>
+          ) : trackPlans.length > 0 ? (
             <Badge variant="secondary">{trackPlans.length}개</Badge>
-          )}
+          ) : null}
         </div>
-        {trackPlans.length === 0 ? (
+        {trackPlans.length === 0 && generationStep !== "plan" ? (
           <p className="text-xs text-muted-foreground">
             Track Plan은 원곡을 복제하는 것이 아니라, 비슷한 에너지와 제작 원리를 바탕으로 내 곡을
             시작할 수 있게 도와주는 가이드입니다.
           </p>
-        ) : (
+        ) : trackPlans.length > 0 ? (
           <div className="flex flex-col gap-2">
             {trackPlans.map((plan) => (
               <div key={plan.id} className="rounded-md border bg-background p-3 text-xs flex flex-col gap-2">
                 <div className="flex items-center gap-2">
                   <span className="font-medium">{plan.title}</span>
-                  <Badge
-                    variant="outline"
-                    className={
-                      plan.confidence === "high"
-                        ? "border-green-500 text-green-600"
-                        : plan.confidence === "low"
-                          ? "border-orange-400 text-orange-500"
-                          : ""
-                    }
-                  >
-                    {plan.confidence === "high" ? "높음" : plan.confidence === "low" ? "낮음" : "보통"}
+                  <Badge variant="outline" className={CONFIDENCE_STYLES[plan.confidence] ?? ""}>
+                    {CONFIDENCE_LABELS[plan.confidence] ?? plan.confidence}
                   </Badge>
                 </div>
                 <p className="text-muted-foreground">{plan.directionSummary}</p>
@@ -560,26 +574,31 @@ export function ReferenceCoachSection({ track }: ReferenceCoachSectionProps) {
               </div>
             ))}
           </div>
-        )}
+        ) : null}
       </div>
 
       {/* Learn Missions 카드 */}
       <div className="rounded-lg border bg-muted/20 p-4 flex flex-col gap-2">
         <div className="flex items-center justify-between">
           <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Learn Missions
+            학습 미션
           </h3>
-          {learningMissions.length > 0 && (
+          {generationStep === "missions" ? (
+            <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <span className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
+              생성 중
+            </span>
+          ) : learningMissions.length > 0 ? (
             <Badge variant="secondary">
               {learningMissions.filter((m) => m.completed).length}/{learningMissions.length} 완료
             </Badge>
-          )}
+          ) : null}
         </div>
-        {learningMissions.length === 0 ? (
+        {learningMissions.length === 0 && generationStep !== "missions" ? (
           <p className="text-xs text-muted-foreground">
             Track Plan이 생성되면 초보 작곡가를 위한 미니 학습 미션을 만들 수 있어요.
           </p>
-        ) : (
+        ) : learningMissions.length > 0 ? (
           <div className="flex flex-col gap-1.5">
             {learningMissions.map((mission) => (
               <div
@@ -593,14 +612,14 @@ export function ReferenceCoachSection({ track }: ReferenceCoachSectionProps) {
                     {mission.title}
                   </span>
                   <Badge variant="outline" className="ml-auto text-xs">
-                    {mission.category}
+                    {CATEGORY_LABELS[mission.category] ?? mission.category}
                   </Badge>
                 </div>
                 <p className="text-muted-foreground">{mission.objective}</p>
               </div>
             ))}
           </div>
-        )}
+        ) : null}
       </div>
     </div>
   );
