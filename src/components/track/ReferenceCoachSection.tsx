@@ -1,10 +1,20 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { AlertCircle } from "lucide-react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Textarea } from "../ui/textarea";
 import { Badge } from "../ui/badge";
+import { Alert, AlertDescription } from "../ui/alert";
 import { useConfigStore } from "../../store/useConfigStore";
+import { useAlbumStore } from "../../store/useAlbumStore";
+import { callClaude, AnthropicApiError } from "../../lib/ai/anthropic";
+import { buildPrompt } from "../../lib/agent/prompts";
+import {
+  validateReferenceBriefJson,
+  validateTrackPlanJson,
+  validateLearningMissionsJson,
+} from "../../lib/agent/reference-coach-validator";
 import type { Track } from "../../lib/types/album";
 import type { ReferenceFocus } from "../../lib/types/reference-coach";
 
@@ -19,6 +29,15 @@ const FOCUS_OPTIONS: { value: ReferenceFocus; label: string }[] = [
   { value: "arrangement", label: "편곡" },
 ];
 
+type GenerationStep = "idle" | "brief" | "plan" | "missions";
+
+const STEP_LABELS: Record<GenerationStep, string> = {
+  idle: "",
+  brief: "Reference Brief 분석 중...",
+  plan: "Track Plan 작성 중...",
+  missions: "학습 미션 생성 중...",
+};
+
 interface ReferenceCoachSectionProps {
   track: Track;
 }
@@ -26,13 +45,19 @@ interface ReferenceCoachSectionProps {
 export function ReferenceCoachSection({ track }: ReferenceCoachSectionProps) {
   const navigate = useNavigate();
   const apiKey = useConfigStore((s) => s.config.anthropicApiKey);
+  const album = useAlbumStore((s) => s.albums.find((a) => a.id === track.albumId));
+  const addReferenceBrief = useAlbumStore((s) => s.addReferenceBrief);
+  const addTrackPlan = useAlbumStore((s) => s.addTrackPlan);
+  const addLearningMissions = useAlbumStore((s) => s.addLearningMissions);
 
   const [artist, setArtist] = useState("");
   const [songTitle, setSongTitle] = useState("");
   const [selectedFocus, setSelectedFocus] = useState<ReferenceFocus[]>([]);
   const [userNotes, setUserNotes] = useState("");
-  const [isGenerating, setIsGenerating] = useState(false);
+  const [generationStep, setGenerationStep] = useState<GenerationStep>("idle");
+  const [generationError, setGenerationError] = useState<string | null>(null);
 
+  const isGenerating = generationStep !== "idle";
   const referenceBriefs = track.referenceBriefs ?? [];
   const trackPlans = track.trackPlans ?? [];
   const learningMissions = track.learningMissions ?? [];
@@ -48,11 +73,120 @@ export function ReferenceCoachSection({ track }: ReferenceCoachSectionProps) {
       navigate("/settings");
       return;
     }
-    if (!artist.trim() || !songTitle.trim()) return;
-    setIsGenerating(true);
-    // AI 연결은 MVP-19에서 구현
-    await new Promise((r) => setTimeout(r, 500));
-    setIsGenerating(false);
+    if (!artist.trim() || !songTitle.trim() || !album) return;
+
+    setGenerationError(null);
+
+    try {
+      // Step 1: Reference Brief
+      setGenerationStep("brief");
+      const { instruction: briefInstruction, outputSchema: briefSchema } = buildPrompt(
+        "generate_reference_brief",
+        track,
+        album,
+        { artist: artist.trim(), songTitle: songTitle.trim(), userFocus: selectedFocus, userNotes }
+      );
+      const briefResult = await callClaude(apiKey, [
+        { role: "user", content: `${briefInstruction}\n\nOutput schema:\n${briefSchema}` },
+      ]);
+
+      if (briefResult.parseStatus === "failed") {
+        setGenerationError(
+          `Reference Brief 생성 실패: JSON 파싱 오류 — ${briefResult.errorMessage ?? "알 수 없는 오류"}`
+        );
+        return;
+      }
+
+      const briefValidation = validateReferenceBriefJson(
+        briefResult.parsedJson,
+        track.id,
+        artist.trim(),
+        songTitle.trim(),
+        selectedFocus,
+        userNotes || undefined
+      );
+      if (!briefValidation.ok) {
+        setGenerationError(`Reference Brief 유효성 오류: ${briefValidation.error}`);
+        return;
+      }
+
+      await addReferenceBrief(track.id, briefValidation.data);
+      const savedBriefId = briefValidation.data.id;
+
+      // Step 2: Track Plan
+      setGenerationStep("plan");
+      const { instruction: planInstruction, outputSchema: planSchema } = buildPrompt(
+        "generate_track_plan",
+        track,
+        album,
+        { referenceBrief: briefValidation.data, briefId: savedBriefId }
+      );
+      const planResult = await callClaude(apiKey, [
+        { role: "user", content: `${planInstruction}\n\nOutput schema:\n${planSchema}` },
+      ]);
+
+      if (planResult.parseStatus === "failed") {
+        setGenerationError(
+          `Track Plan 생성 실패: JSON 파싱 오류 — ${planResult.errorMessage ?? "알 수 없는 오류"}`
+        );
+        return;
+      }
+
+      const planValidation = validateTrackPlanJson(planResult.parsedJson, track.id, savedBriefId);
+      if (!planValidation.ok) {
+        setGenerationError(`Track Plan 유효성 오류: ${planValidation.error}`);
+        return;
+      }
+
+      await addTrackPlan(track.id, planValidation.data);
+      const savedPlanId = planValidation.data.id;
+
+      // Step 3: Learning Missions
+      setGenerationStep("missions");
+      const { instruction: missionsInstruction, outputSchema: missionsSchema } = buildPrompt(
+        "generate_learning_missions",
+        track,
+        album,
+        { trackPlan: planValidation.data, planId: savedPlanId, briefId: savedBriefId }
+      );
+      const missionsResult = await callClaude(apiKey, [
+        { role: "user", content: `${missionsInstruction}\n\nOutput schema:\n${missionsSchema}` },
+      ]);
+
+      if (missionsResult.parseStatus === "failed") {
+        setGenerationError(
+          `학습 미션 생성 실패: JSON 파싱 오류 — ${missionsResult.errorMessage ?? "알 수 없는 오류"}`
+        );
+        return;
+      }
+
+      const missionsValidation = validateLearningMissionsJson(
+        missionsResult.parsedJson,
+        track.id,
+        savedPlanId,
+        savedBriefId
+      );
+      if (!missionsValidation.ok) {
+        setGenerationError(`학습 미션 유효성 오류: ${missionsValidation.error}`);
+        return;
+      }
+
+      await addLearningMissions(track.id, missionsValidation.data);
+
+      // 성공 시 입력 초기화
+      setArtist("");
+      setSongTitle("");
+      setSelectedFocus([]);
+      setUserNotes("");
+    } catch (err) {
+      if (err instanceof AnthropicApiError) {
+        setGenerationError(`API 오류 (${err.status}): ${err.message}`);
+      } else {
+        setGenerationError(err instanceof Error ? err.message : String(err));
+      }
+    } finally {
+      setGenerationStep("idle");
+    }
   }
 
   return (
@@ -77,6 +211,7 @@ export function ReferenceCoachSection({ track }: ReferenceCoachSectionProps) {
               value={artist}
               onChange={(e) => setArtist(e.target.value)}
               placeholder="예: NewJeans"
+              disabled={isGenerating}
             />
           </div>
           <div className="space-y-1">
@@ -85,6 +220,7 @@ export function ReferenceCoachSection({ track }: ReferenceCoachSectionProps) {
               value={songTitle}
               onChange={(e) => setSongTitle(e.target.value)}
               placeholder="예: OMG"
+              disabled={isGenerating}
             />
           </div>
         </div>
@@ -96,11 +232,13 @@ export function ReferenceCoachSection({ track }: ReferenceCoachSectionProps) {
               <button
                 key={opt.value}
                 onClick={() => toggleFocus(opt.value)}
+                disabled={isGenerating}
                 className={[
                   "rounded-md border px-3 py-1 text-xs transition-colors",
                   selectedFocus.includes(opt.value)
                     ? "border-primary bg-primary text-primary-foreground"
                     : "border-border bg-background hover:bg-muted text-foreground",
+                  isGenerating ? "opacity-50 cursor-not-allowed" : "",
                 ].join(" ")}
               >
                 {opt.label}
@@ -116,6 +254,7 @@ export function ReferenceCoachSection({ track }: ReferenceCoachSectionProps) {
             onChange={(e) => setUserNotes(e.target.value)}
             placeholder="이 곡에서 특히 참고하고 싶은 부분이 있으면 자유롭게 적어주세요."
             rows={2}
+            disabled={isGenerating}
           />
         </div>
 
@@ -132,29 +271,38 @@ export function ReferenceCoachSection({ track }: ReferenceCoachSectionProps) {
           </div>
         )}
 
+        {generationError && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{generationError}</AlertDescription>
+          </Alert>
+        )}
+
+        {isGenerating && (
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+            {STEP_LABELS[generationStep]}
+          </div>
+        )}
+
         <div className="flex gap-2">
           <Button
             onClick={handleGenerateAll}
             disabled={isGenerating || !artist.trim() || !songTitle.trim()}
             size="sm"
           >
-            {isGenerating ? (
-              <>
-                <span className="mr-1.5 h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                생성 중...
-              </>
-            ) : (
-              "한 번에 생성"
-            )}
+            {isGenerating ? "생성 중..." : "한 번에 생성"}
           </Button>
           <Button
             variant="ghost"
             size="sm"
+            disabled={isGenerating}
             onClick={() => {
               setArtist("");
               setSongTitle("");
               setSelectedFocus([]);
               setUserNotes("");
+              setGenerationError(null);
             }}
           >
             초기화
@@ -179,12 +327,35 @@ export function ReferenceCoachSection({ track }: ReferenceCoachSectionProps) {
         ) : (
           <div className="flex flex-col gap-2">
             {referenceBriefs.map((brief) => (
-              <div key={brief.id} className="rounded-md border bg-background p-3 text-xs">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="font-medium">{brief.artist} — {brief.songTitle}</span>
-                  <Badge variant="outline" className="text-xs">{brief.confidence}</Badge>
+              <div key={brief.id} className="rounded-md border bg-background p-3 text-xs flex flex-col gap-1.5">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">
+                    {brief.artist} — {brief.songTitle}
+                  </span>
+                  <Badge
+                    variant="outline"
+                    className={
+                      brief.confidence === "high"
+                        ? "border-green-500 text-green-600"
+                        : brief.confidence === "low"
+                          ? "border-orange-400 text-orange-500"
+                          : ""
+                    }
+                  >
+                    {brief.confidence === "high" ? "높음" : brief.confidence === "low" ? "낮음" : "보통"}
+                  </Badge>
                 </div>
                 <p className="text-muted-foreground">{brief.summary}</p>
+                {brief.genreTags.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {brief.genreTags.map((tag) => (
+                      <Badge key={tag} variant="secondary" className="text-xs">
+                        {tag}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+                <p className="text-muted-foreground/70 italic">{brief.disclaimer}</p>
               </div>
             ))}
           </div>
@@ -201,11 +372,51 @@ export function ReferenceCoachSection({ track }: ReferenceCoachSectionProps) {
             <Badge variant="secondary">{trackPlans.length}개</Badge>
           )}
         </div>
-        <p className="text-xs text-muted-foreground">
-          {trackPlans.length === 0
-            ? "Track Plan은 원곡을 복제하는 것이 아니라, 비슷한 에너지와 제작 원리를 바탕으로 내 곡을 시작할 수 있게 도와주는 가이드입니다."
-            : `${trackPlans.length}개의 Track Plan이 있어요.`}
-        </p>
+        {trackPlans.length === 0 ? (
+          <p className="text-xs text-muted-foreground">
+            Track Plan은 원곡을 복제하는 것이 아니라, 비슷한 에너지와 제작 원리를 바탕으로 내 곡을
+            시작할 수 있게 도와주는 가이드입니다.
+          </p>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {trackPlans.map((plan) => (
+              <div key={plan.id} className="rounded-md border bg-background p-3 text-xs flex flex-col gap-1.5">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">{plan.title}</span>
+                  <Badge
+                    variant="outline"
+                    className={
+                      plan.confidence === "high"
+                        ? "border-green-500 text-green-600"
+                        : plan.confidence === "low"
+                          ? "border-orange-400 text-orange-500"
+                          : ""
+                    }
+                  >
+                    {plan.confidence === "high" ? "높음" : plan.confidence === "low" ? "낮음" : "보통"}
+                  </Badge>
+                </div>
+                <p className="text-muted-foreground">{plan.directionSummary}</p>
+                {plan.keySuggestions.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    <span className="text-muted-foreground">키: </span>
+                    {plan.keySuggestions.map((k) => (
+                      <Badge key={k} variant="secondary" className="text-xs">
+                        {k}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+                {plan.bpmSuggestions.length > 0 && (
+                  <p className="text-muted-foreground">
+                    BPM: {plan.bpmSuggestions.join(", ")}
+                  </p>
+                )}
+                <p className="text-muted-foreground/70 italic">{plan.disclaimer}</p>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Learn Missions 카드 */}
@@ -229,12 +440,19 @@ export function ReferenceCoachSection({ track }: ReferenceCoachSectionProps) {
             {learningMissions.map((mission) => (
               <div
                 key={mission.id}
-                className="flex items-center gap-2 rounded-md border bg-background p-2.5 text-xs"
+                className="rounded-md border bg-background p-3 text-xs flex flex-col gap-1"
               >
-                <span className={mission.completed ? "line-through text-muted-foreground" : ""}>
-                  {mission.title}
-                </span>
-                <Badge variant="outline" className="ml-auto text-xs">{mission.category}</Badge>
+                <div className="flex items-center gap-2">
+                  <span
+                    className={mission.completed ? "line-through text-muted-foreground" : "font-medium"}
+                  >
+                    {mission.title}
+                  </span>
+                  <Badge variant="outline" className="ml-auto text-xs">
+                    {mission.category}
+                  </Badge>
+                </div>
+                <p className="text-muted-foreground">{mission.objective}</p>
               </div>
             ))}
           </div>
