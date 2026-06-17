@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Plus, Trash2, Disc3 } from "lucide-react";
 import { Button } from "../components/ui/button";
+import { Badge } from "../components/ui/badge";
 import { CreateAlbumDialog } from "../components/projects/CreateAlbumDialog";
 import { useAlbumStore } from "../store/useAlbumStore";
 import type { Album } from "../lib/types/album";
@@ -59,13 +60,11 @@ function AlbumCard({
       <div className="mt-auto flex items-center justify-between gap-2 pt-1">
         <div className="flex items-center gap-1.5 overflow-hidden">
           {album.genre && (
-            <span className="truncate rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-              {album.genre}
-            </span>
+            <Badge variant="secondary" className="truncate">{album.genre}</Badge>
           )}
-          <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+          <Badge variant="secondary" className="shrink-0">
             {trackCount} track{trackCount !== 1 ? "s" : ""}
-          </span>
+          </Badge>
         </div>
         <span className="shrink-0 text-xs text-muted-foreground">
           {formatDate(album.updatedAt)}
