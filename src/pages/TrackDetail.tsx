@@ -217,7 +217,7 @@ export function TrackDetail() {
       </div>
 
       {/* Chord & Groove */}
-      <ChordGrooveSection track={track} />
+      {album && <ChordGrooveSection track={track} album={album} />}
 
       {/* Notes */}
       <NotesSection track={track} />

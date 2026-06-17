@@ -13,7 +13,8 @@ export type AgentTask =
   | "generate_song_brief"
   | "generate_suno_prompts"
   | "generate_sound_keywords"
-  | "refine_suno_prompt";
+  | "refine_suno_prompt"
+  | "generate_chord_progression";
 
 export type AgentRequest = {
   id: string;
