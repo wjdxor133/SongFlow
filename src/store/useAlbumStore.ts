@@ -11,6 +11,7 @@ import type {
 } from "../lib/types/agent";
 import type { GeneratedPrompt, ResultFeedback, PromptRefinement } from "../lib/types/prompt";
 import type { SunoResult } from "../lib/types/suno";
+import type { ReferenceBrief, TrackPlan, LearningMission } from "../lib/types/reference-coach";
 import {
   loadData,
   saveDataCAS,
@@ -87,6 +88,9 @@ type AlbumStore = {
         | "referenceAnalyses"
         | "chordProgressions"
         | "groovePatterns"
+        | "referenceBriefs"
+        | "trackPlans"
+        | "learningMissions"
       >
     >
   ) => Promise<void>;
@@ -103,6 +107,16 @@ type AlbumStore = {
   addFeedback: (trackId: string, feedback: ResultFeedback) => Promise<void>;
   addRefinement: (trackId: string, refinement: PromptRefinement) => Promise<void>;
   addNote: (trackId: string, note: TrackNote) => Promise<void>;
+
+  // Reference Coach
+  addReferenceBrief: (trackId: string, brief: ReferenceBrief) => Promise<void>;
+  deleteReferenceBrief: (trackId: string, briefId: string) => Promise<void>;
+  addTrackPlan: (trackId: string, plan: TrackPlan) => Promise<void>;
+  deleteTrackPlan: (trackId: string, planId: string) => Promise<void>;
+  addLearningMissions: (trackId: string, missions: LearningMission[]) => Promise<void>;
+  updateLearningMission: (trackId: string, missionId: string, patch: Partial<LearningMission>) => Promise<void>;
+  deleteLearningMission: (trackId: string, missionId: string) => Promise<void>;
+  addSunoPromptTryout: (trackId: string, prompt: GeneratedPrompt) => Promise<void>;
 };
 
 async function withCAS(
@@ -251,6 +265,126 @@ export const useAlbumStore = create<AlbumStore>((set, get) => ({
   async addNote(trackId, note) {
     await withCAS(set, (data) =>
       appendToTrack(data, trackId, "notes", note)
+    );
+  },
+
+  async addReferenceBrief(trackId, brief) {
+    await withCAS(set, (data) => ({
+      ...data,
+      tracks: data.tracks.map((t) =>
+        t.id === trackId
+          ? {
+              ...t,
+              referenceBriefs: [...(t.referenceBriefs ?? []), brief],
+              updatedAt: new Date().toISOString(),
+            }
+          : t
+      ),
+    }));
+  },
+
+  async deleteReferenceBrief(trackId, briefId) {
+    await withCAS(set, (data) => {
+      const track = data.tracks.find((t) => t.id === trackId);
+      if (!track) return data;
+      return {
+        ...data,
+        tracks: data.tracks.map((t) =>
+          t.id === trackId
+            ? {
+                ...t,
+                referenceBriefs: (t.referenceBriefs ?? []).filter((b) => b.id !== briefId),
+                updatedAt: new Date().toISOString(),
+              }
+            : t
+        ),
+      };
+    });
+  },
+
+  async addTrackPlan(trackId, plan) {
+    await withCAS(set, (data) => ({
+      ...data,
+      tracks: data.tracks.map((t) =>
+        t.id === trackId
+          ? {
+              ...t,
+              trackPlans: [...(t.trackPlans ?? []), plan],
+              updatedAt: new Date().toISOString(),
+            }
+          : t
+      ),
+    }));
+  },
+
+  async deleteTrackPlan(trackId, planId) {
+    await withCAS(set, (data) => ({
+      ...data,
+      tracks: data.tracks.map((t) =>
+        t.id === trackId
+          ? {
+              ...t,
+              trackPlans: (t.trackPlans ?? []).filter((p) => p.id !== planId),
+              updatedAt: new Date().toISOString(),
+            }
+          : t
+      ),
+    }));
+  },
+
+  async addLearningMissions(trackId, missions) {
+    await withCAS(set, (data) => ({
+      ...data,
+      tracks: data.tracks.map((t) =>
+        t.id === trackId
+          ? {
+              ...t,
+              learningMissions: [...(t.learningMissions ?? []), ...missions],
+              updatedAt: new Date().toISOString(),
+            }
+          : t
+      ),
+    }));
+  },
+
+  async updateLearningMission(trackId, missionId, patch) {
+    const now = new Date().toISOString();
+    await withCAS(set, (data) => ({
+      ...data,
+      tracks: data.tracks.map((t) =>
+        t.id === trackId
+          ? {
+              ...t,
+              learningMissions: (t.learningMissions ?? []).map((m) =>
+                m.id === missionId
+                  ? { ...m, ...patch, updatedAt: now }
+                  : m
+              ),
+              updatedAt: now,
+            }
+          : t
+      ),
+    }));
+  },
+
+  async deleteLearningMission(trackId, missionId) {
+    await withCAS(set, (data) => ({
+      ...data,
+      tracks: data.tracks.map((t) =>
+        t.id === trackId
+          ? {
+              ...t,
+              learningMissions: (t.learningMissions ?? []).filter((m) => m.id !== missionId),
+              updatedAt: new Date().toISOString(),
+            }
+          : t
+      ),
+    }));
+  },
+
+  async addSunoPromptTryout(trackId, prompt) {
+    await withCAS(set, (data) =>
+      appendToTrack(data, trackId, "prompts", prompt)
     );
   },
 }));

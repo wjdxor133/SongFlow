@@ -185,6 +185,113 @@ const TOOLS = [
       required: ["trackId"],
     },
   },
+  {
+    name: "save_reference_brief",
+    description: "Save a Reference Brief (AI-generated analysis of a reference song) to a track",
+    inputSchema: {
+      type: "object",
+      properties: {
+        trackId: { type: "string" },
+        artist: { type: "string" },
+        songTitle: { type: "string" },
+        summary: { type: "string" },
+        genreTags: { type: "array", items: { type: "string" } },
+        moodTags: { type: "array", items: { type: "string" } },
+        productionTraits: { type: "array", items: { type: "string" } },
+        confidence: { type: "string", enum: ["low", "medium", "high"] },
+        disclaimer: { type: "string" },
+      },
+      required: ["trackId", "artist", "songTitle", "summary"],
+    },
+  },
+  {
+    name: "get_reference_briefs",
+    description: "Get all Reference Briefs for a track",
+    inputSchema: {
+      type: "object",
+      properties: { trackId: { type: "string" } },
+      required: ["trackId"],
+    },
+  },
+  {
+    name: "save_track_plan",
+    description: "Save a Track Plan (AI-generated production direction guide) to a track",
+    inputSchema: {
+      type: "object",
+      properties: {
+        trackId: { type: "string" },
+        referenceBriefId: { type: "string" },
+        title: { type: "string" },
+        directionSummary: { type: "string" },
+        bpmSuggestions: { type: "array", items: { type: "number" } },
+        keySuggestions: { type: "array", items: { type: "string" } },
+        beginnerExplanation: { type: "string" },
+        confidence: { type: "string", enum: ["low", "medium", "high"] },
+      },
+      required: ["trackId", "title", "directionSummary"],
+    },
+  },
+  {
+    name: "get_track_plans",
+    description: "Get all Track Plans for a track",
+    inputSchema: {
+      type: "object",
+      properties: { trackId: { type: "string" } },
+      required: ["trackId"],
+    },
+  },
+  {
+    name: "save_learning_missions",
+    description: "Save an array of Learning Missions to a track",
+    inputSchema: {
+      type: "object",
+      properties: {
+        trackId: { type: "string" },
+        trackPlanId: { type: "string" },
+        referenceBriefId: { type: "string" },
+        missions: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              category: { type: "string" },
+              title: { type: "string" },
+              objective: { type: "string" },
+              explanation: { type: "string" },
+              task: { type: "string" },
+              beginnerHint: { type: "string" },
+            },
+            required: ["category", "title", "objective", "task"],
+          },
+        },
+      },
+      required: ["trackId", "missions"],
+    },
+  },
+  {
+    name: "get_learning_missions",
+    description: "Get all Learning Missions for a track",
+    inputSchema: {
+      type: "object",
+      properties: { trackId: { type: "string" } },
+      required: ["trackId"],
+    },
+  },
+  {
+    name: "update_learning_mission",
+    description: "Update a Learning Mission (e.g., mark as completed, add memo)",
+    inputSchema: {
+      type: "object",
+      properties: {
+        trackId: { type: "string" },
+        missionId: { type: "string" },
+        completed: { type: "boolean" },
+        userMemo: { type: "string" },
+        aiFeedback: { type: "string" },
+      },
+      required: ["trackId", "missionId"],
+    },
+  },
 ] as const;
 
 // ─── Tool handlers ────────────────────────────────────────────────────────────
@@ -393,6 +500,183 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           response: track.agentResponses.find((r) => (r as { requestId: string }).requestId === (req as { id: string }).id),
         }));
         return { content: [{ type: "text", text: JSON.stringify(history, null, 2) }] };
+      }
+
+      case "save_reference_brief": {
+        const t = now();
+        if (!loadData().tracks.find((tr) => tr.id === a.trackId)) {
+          return { content: [{ type: "text", text: `Track ${a.trackId} not found` }], isError: true };
+        }
+        const brief = {
+          id: randomId(),
+          trackId: String(a.trackId),
+          artist: String(a.artist),
+          songTitle: String(a.songTitle),
+          userFocus: Array.isArray(a.userFocus) ? a.userFocus : [],
+          userNotes: a.userNotes ? String(a.userNotes) : undefined,
+          summary: String(a.summary),
+          genreTags: Array.isArray(a.genreTags) ? a.genreTags : [],
+          moodTags: Array.isArray(a.moodTags) ? a.moodTags : [],
+          productionTraits: Array.isArray(a.productionTraits) ? a.productionTraits : [],
+          rhythmTraits: Array.isArray(a.rhythmTraits) ? a.rhythmTraits : [],
+          harmonyTraits: Array.isArray(a.harmonyTraits) ? a.harmonyTraits : [],
+          bassTraits: Array.isArray(a.bassTraits) ? a.bassTraits : [],
+          toplineTraits: Array.isArray(a.toplineTraits) ? a.toplineTraits : [],
+          vocalTraits: Array.isArray(a.vocalTraits) ? a.vocalTraits : [],
+          soundTextureTraits: Array.isArray(a.soundTextureTraits) ? a.soundTextureTraits : [],
+          arrangementTraits: Array.isArray(a.arrangementTraits) ? a.arrangementTraits : [],
+          sourceMode: "ai_knowledge" as const,
+          sourceNotes: Array.isArray(a.sourceNotes) ? a.sourceNotes : [],
+          disclaimer: a.disclaimer ? String(a.disclaimer) : "이 분석은 AI 추론 기반입니다.",
+          confidence: (["low", "medium", "high"].includes(String(a.confidence)) ? a.confidence : "medium") as "low" | "medium" | "high",
+          createdAt: t,
+          updatedAt: t,
+        };
+        withCAS((data) => ({
+          ...data,
+          tracks: data.tracks.map((track) =>
+            track.id === a.trackId
+              ? { ...track, referenceBriefs: [...(track.referenceBriefs ?? []), brief], updatedAt: t }
+              : track
+          ),
+        }));
+        return { content: [{ type: "text", text: JSON.stringify(brief, null, 2) }] };
+      }
+
+      case "get_reference_briefs": {
+        const data = loadData();
+        const track = data.tracks.find((t) => t.id === a.trackId);
+        if (!track) return { content: [{ type: "text", text: `Track ${a.trackId} not found` }], isError: true };
+        return { content: [{ type: "text", text: JSON.stringify(track.referenceBriefs ?? [], null, 2) }] };
+      }
+
+      case "save_track_plan": {
+        const t = now();
+        if (!loadData().tracks.find((tr) => tr.id === a.trackId)) {
+          return { content: [{ type: "text", text: `Track ${a.trackId} not found` }], isError: true };
+        }
+        const rawSoundKw = (a.soundKeywords ?? {}) as Record<string, unknown>;
+        const toStrArr = (v: unknown): string[] =>
+          Array.isArray(v) ? v.map(String) : [];
+        const plan = {
+          id: randomId(),
+          trackId: String(a.trackId),
+          referenceBriefId: a.referenceBriefId ? String(a.referenceBriefId) : undefined,
+          title: String(a.title),
+          directionSummary: String(a.directionSummary),
+          bpmSuggestions: Array.isArray(a.bpmSuggestions)
+            ? a.bpmSuggestions.map(Number).filter(Number.isFinite)
+            : [],
+          keySuggestions: Array.isArray(a.keySuggestions) ? a.keySuggestions.map(String) : [],
+          chordProgressionSuggestions: Array.isArray(a.chordProgressionSuggestions) ? a.chordProgressionSuggestions : [],
+          grooveSuggestions: Array.isArray(a.grooveSuggestions) ? a.grooveSuggestions : [],
+          bassDirection: a.bassDirection ?? { summary: "", rootMotionIdeas: [], rhythmIdeas: [], beginnerTips: [] },
+          toplineDirection: a.toplineDirection ?? { summary: "", hookIdeas: [], rhythmIdeas: [], vocalToneIdeas: [], sunoTips: [] },
+          soundKeywords: {
+            drums: toStrArr(rawSoundKw.drums),
+            bass: toStrArr(rawSoundKw.bass),
+            melody: toStrArr(rawSoundKw.melody),
+            harmony: toStrArr(rawSoundKw.harmony),
+            fx: toStrArr(rawSoundKw.fx),
+            vocal: toStrArr(rawSoundKw.vocal),
+          },
+          arrangementNotes: a.arrangementNotes ?? {},
+          beginnerExplanation: a.beginnerExplanation ? String(a.beginnerExplanation) : "",
+          disclaimer: a.disclaimer ? String(a.disclaimer) : "이 플랜은 AI 추론 기반입니다.",
+          confidence: (["low", "medium", "high"].includes(String(a.confidence)) ? a.confidence : "medium") as "low" | "medium" | "high",
+          createdAt: t,
+          updatedAt: t,
+        };
+        withCAS((data) => ({
+          ...data,
+          tracks: data.tracks.map((track) =>
+            track.id === a.trackId
+              ? { ...track, trackPlans: [...(track.trackPlans ?? []), plan], updatedAt: t }
+              : track
+          ),
+        }));
+        return { content: [{ type: "text", text: JSON.stringify(plan, null, 2) }] };
+      }
+
+      case "get_track_plans": {
+        const data = loadData();
+        const track = data.tracks.find((t) => t.id === a.trackId);
+        if (!track) return { content: [{ type: "text", text: `Track ${a.trackId} not found` }], isError: true };
+        return { content: [{ type: "text", text: JSON.stringify(track.trackPlans ?? [], null, 2) }] };
+      }
+
+      case "save_learning_missions": {
+        const t = now();
+        if (!loadData().tracks.find((tr) => tr.id === a.trackId)) {
+          return { content: [{ type: "text", text: `Track ${a.trackId} not found` }], isError: true };
+        }
+        const VALID_CATS = ["harmony", "drums", "bass", "topline", "sound_design", "arrangement", "suno_prompt"];
+        const rawMissions = Array.isArray(a.missions) ? a.missions as Record<string, unknown>[] : [];
+        const missions = rawMissions.map((m) => ({
+          id: randomId(),
+          trackId: String(a.trackId),
+          trackPlanId: a.trackPlanId ? String(a.trackPlanId) : undefined,
+          referenceBriefId: a.referenceBriefId ? String(a.referenceBriefId) : undefined,
+          category: VALID_CATS.includes(String(m.category)) ? String(m.category) : "harmony",
+          title: String(m.title ?? ""),
+          objective: String(m.objective ?? ""),
+          explanation: String(m.explanation ?? ""),
+          task: String(m.task ?? ""),
+          beginnerHint: String(m.beginnerHint ?? ""),
+          expectedOutput: m.expectedOutput ? String(m.expectedOutput) : undefined,
+          completed: false,
+          createdAt: t,
+          updatedAt: t,
+        }));
+        withCAS((data) => ({
+          ...data,
+          tracks: data.tracks.map((track) =>
+            track.id === a.trackId
+              ? {
+                  ...track,
+                  learningMissions: [...(track.learningMissions ?? []), ...missions],
+                  updatedAt: t,
+                }
+              : track
+          ),
+        }));
+        return { content: [{ type: "text", text: JSON.stringify(missions, null, 2) }] };
+      }
+
+      case "get_learning_missions": {
+        const data = loadData();
+        const track = data.tracks.find((t) => t.id === a.trackId);
+        if (!track) return { content: [{ type: "text", text: `Track ${a.trackId} not found` }], isError: true };
+        return { content: [{ type: "text", text: JSON.stringify(track.learningMissions ?? [], null, 2) }] };
+      }
+
+      case "update_learning_mission": {
+        const t = now();
+        if (!loadData().tracks.find((tr) => tr.id === a.trackId)) {
+          return { content: [{ type: "text", text: `Track ${a.trackId} not found` }], isError: true };
+        }
+        withCAS((data) => ({
+          ...data,
+          tracks: data.tracks.map((track) => {
+            if (track.id !== a.trackId) return track;
+            return {
+              ...track,
+              learningMissions: (track.learningMissions ?? []).map((m) => {
+                const mission = m as Record<string, unknown>;
+                if (mission.id !== a.missionId) return m;
+                return {
+                  ...mission,
+                  ...(a.completed !== undefined ? { completed: Boolean(a.completed), completedAt: Boolean(a.completed) ? t : undefined } : {}),
+                  ...(a.userMemo !== undefined ? { userMemo: String(a.userMemo) } : {}),
+                  ...(a.aiFeedback !== undefined ? { aiFeedback: String(a.aiFeedback) } : {}),
+                  updatedAt: t,
+                };
+              }),
+              updatedAt: t,
+            };
+          }),
+        }));
+        return { content: [{ type: "text", text: JSON.stringify({ success: true, missionId: a.missionId }, null, 2) }] };
       }
 
       default:
