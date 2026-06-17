@@ -1,6 +1,13 @@
 import { useState } from "react";
-import { Trash2, StickyNote } from "lucide-react";
+import { Trash2, StickyNote, Plus } from "lucide-react";
 import { Button } from "../ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "../ui/dialog";
 import { useAlbumStore } from "../../store/useAlbumStore";
 import type { Track, TrackNote } from "../../lib/types/album";
 
@@ -21,6 +28,7 @@ export function NotesSection({ track }: Props) {
   const addNote = useAlbumStore((s) => s.addNote);
   const updateTrack = useAlbumStore((s) => s.updateTrack);
 
+  const [open, setOpen] = useState(false);
   const [content, setContent] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -39,6 +47,7 @@ export function NotesSection({ track }: Props) {
       };
       await addNote(track.id, note);
       setContent("");
+      setOpen(false);
     } finally {
       setSaving(false);
     }
@@ -52,32 +61,49 @@ export function NotesSection({ track }: Props) {
 
   return (
     <div className="flex flex-col gap-3">
-      <h2 className="text-sm font-semibold">
-        Notes{" "}
-        <span className="text-sm font-normal text-muted-foreground">({track.notes.length})</span>
-      </h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-semibold">
+          Notes{" "}
+          <span className="text-sm font-normal text-muted-foreground">({track.notes.length})</span>
+        </h2>
+        <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
+          <Plus className="h-3.5 w-3.5 mr-1" />
+          노트 추가
+        </Button>
+      </div>
 
-      <form onSubmit={handleAdd} className="flex flex-col gap-2">
-        <textarea
-          className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring transition-colors resize-none"
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          placeholder="자유롭게 메모를 남겨보세요..."
-          rows={3}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
-              e.preventDefault();
-              handleAdd(e as unknown as React.FormEvent);
-            }
-          }}
-        />
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-muted-foreground">⌘ + Enter로 빠르게 저장</span>
-          <Button type="submit" size="sm" disabled={!content.trim() || saving}>
-            {saving ? "저장 중..." : "노트 추가"}
-          </Button>
-        </div>
-      </form>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>노트 추가</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleAdd} className="flex flex-col gap-4">
+            <textarea
+              className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring transition-colors resize-none"
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              placeholder="자유롭게 메모를 남겨보세요..."
+              rows={4}
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                  e.preventDefault();
+                  handleAdd(e as unknown as React.FormEvent);
+                }
+              }}
+            />
+            <span className="text-xs text-muted-foreground -mt-2">⌘ + Enter로 빠르게 저장</span>
+            <DialogFooter>
+              <Button type="button" variant="outline" size="sm" onClick={() => setOpen(false)}>
+                취소
+              </Button>
+              <Button type="submit" size="sm" disabled={!content.trim() || saving}>
+                {saving ? "저장 중..." : "추가"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {track.notes.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed py-6 text-center">
