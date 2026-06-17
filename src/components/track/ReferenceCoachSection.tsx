@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Check } from "lucide-react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Textarea } from "../ui/textarea";
@@ -16,7 +16,8 @@ import {
   validateLearningMissionsJson,
 } from "../../lib/agent/reference-coach-validator";
 import type { Track } from "../../lib/types/album";
-import type { ReferenceFocus } from "../../lib/types/reference-coach";
+import type { TrackPlan, ReferenceFocus } from "../../lib/types/reference-coach";
+import type { GeneratedPrompt } from "../../lib/types/prompt";
 
 const FOCUS_OPTIONS: { value: ReferenceFocus; label: string }[] = [
   { value: "overall_mood", label: "전체 분위기" },
@@ -49,6 +50,8 @@ export function ReferenceCoachSection({ track }: ReferenceCoachSectionProps) {
   const addReferenceBrief = useAlbumStore((s) => s.addReferenceBrief);
   const addTrackPlan = useAlbumStore((s) => s.addTrackPlan);
   const addLearningMissions = useAlbumStore((s) => s.addLearningMissions);
+  const updateTrack = useAlbumStore((s) => s.updateTrack);
+  const addSunoPromptTryout = useAlbumStore((s) => s.addSunoPromptTryout);
 
   const [artist, setArtist] = useState("");
   const [songTitle, setSongTitle] = useState("");
@@ -56,6 +59,10 @@ export function ReferenceCoachSection({ track }: ReferenceCoachSectionProps) {
   const [userNotes, setUserNotes] = useState("");
   const [generationStep, setGenerationStep] = useState<GenerationStep>("idle");
   const [generationError, setGenerationError] = useState<string | null>(null);
+  const [appliedChordIds, setAppliedChordIds] = useState<Set<string>>(new Set());
+  const [appliedGrooveIds, setAppliedGrooveIds] = useState<Set<string>>(new Set());
+  const [appliedKeywordsId, setAppliedKeywordsId] = useState<string | null>(null);
+  const [sunoTryoutPlanId, setSunoTryoutPlanId] = useState<string | null>(null);
 
   const isGenerating = generationStep !== "idle";
   const referenceBriefs = track.referenceBriefs ?? [];
@@ -187,6 +194,62 @@ export function ReferenceCoachSection({ track }: ReferenceCoachSectionProps) {
     } finally {
       setGenerationStep("idle");
     }
+  }
+
+  async function handleApplyChord(plan: TrackPlan, chordIdx: number) {
+    const suggestion = plan.chordProgressionSuggestions[chordIdx];
+    if (!suggestion) return;
+    const newCp = { ...suggestion, id: crypto.randomUUID(), isDefault: false };
+    await updateTrack(track.id, {
+      chordProgressions: [...track.chordProgressions, newCp],
+    });
+    setAppliedChordIds((prev) => new Set(prev).add(`${plan.id}-${chordIdx}`));
+  }
+
+  async function handleApplyGroove(plan: TrackPlan, grooveIdx: number) {
+    const suggestion = plan.grooveSuggestions[grooveIdx];
+    if (!suggestion) return;
+    const newGp = { ...suggestion, id: crypto.randomUUID(), isDefault: false };
+    await updateTrack(track.id, {
+      groovePatterns: [...track.groovePatterns, newGp],
+    });
+    setAppliedGrooveIds((prev) => new Set(prev).add(`${plan.id}-${grooveIdx}`));
+  }
+
+  async function handleApplyKeywords(plan: TrackPlan) {
+    await updateTrack(track.id, { soundKeywords: plan.soundKeywords });
+    setAppliedKeywordsId(plan.id);
+  }
+
+  async function handleSunoTryout(plan: TrackPlan) {
+    const now = new Date().toISOString();
+    const kw = plan.soundKeywords;
+    const style = [
+      ...kw.drums.slice(0, 2),
+      ...kw.bass.slice(0, 2),
+      ...kw.melody.slice(0, 2),
+      ...kw.fx.slice(0, 1),
+    ]
+      .filter(Boolean)
+      .join(", ");
+
+    const prompt: GeneratedPrompt = {
+      id: crypto.randomUUID(),
+      requestId: crypto.randomUUID(),
+      style: style || plan.directionSummary,
+      lyrics: "",
+      moreRefreshing: "",
+      moreEmotional: "",
+      vocalFocused: kw.vocal.join(", "),
+      grooveFocused: [...kw.drums, ...kw.bass].join(", "),
+      type: "sound_design",
+      sourceTrackPlanId: plan.id,
+      sourceReferenceBriefId: plan.referenceBriefId,
+      versionLabel: "balanced",
+      createdAt: now,
+    };
+    await addSunoPromptTryout(track.id, prompt);
+    setSunoTryoutPlanId(plan.id);
   }
 
   return (
@@ -380,7 +443,7 @@ export function ReferenceCoachSection({ track }: ReferenceCoachSectionProps) {
         ) : (
           <div className="flex flex-col gap-2">
             {trackPlans.map((plan) => (
-              <div key={plan.id} className="rounded-md border bg-background p-3 text-xs flex flex-col gap-1.5">
+              <div key={plan.id} className="rounded-md border bg-background p-3 text-xs flex flex-col gap-2">
                 <div className="flex items-center gap-2">
                   <span className="font-medium">{plan.title}</span>
                   <Badge
@@ -398,8 +461,8 @@ export function ReferenceCoachSection({ track }: ReferenceCoachSectionProps) {
                 </div>
                 <p className="text-muted-foreground">{plan.directionSummary}</p>
                 {plan.keySuggestions.length > 0 && (
-                  <div className="flex flex-wrap gap-1">
-                    <span className="text-muted-foreground">키: </span>
+                  <div className="flex items-center gap-1 flex-wrap">
+                    <span className="text-muted-foreground">키:</span>
                     {plan.keySuggestions.map((k) => (
                       <Badge key={k} variant="secondary" className="text-xs">
                         {k}
@@ -408,10 +471,91 @@ export function ReferenceCoachSection({ track }: ReferenceCoachSectionProps) {
                   </div>
                 )}
                 {plan.bpmSuggestions.length > 0 && (
-                  <p className="text-muted-foreground">
-                    BPM: {plan.bpmSuggestions.join(", ")}
-                  </p>
+                  <p className="text-muted-foreground">BPM: {plan.bpmSuggestions.join(", ")}</p>
                 )}
+
+                {/* 코드 진행 적용 */}
+                {plan.chordProgressionSuggestions.length > 0 && (
+                  <div className="flex flex-col gap-1 pt-1 border-t border-border/50">
+                    <span className="text-muted-foreground font-medium">코드 진행 제안</span>
+                    {plan.chordProgressionSuggestions.map((cp, idx) => {
+                      const key = `${plan.id}-${idx}`;
+                      const applied = appliedChordIds.has(key);
+                      return (
+                        <div key={cp.id ?? idx} className="flex items-center justify-between gap-2">
+                          <span className="text-muted-foreground">
+                            {cp.name}: {cp.chords.join(" - ")} ({cp.key} {cp.mode})
+                          </span>
+                          <Button
+                            size="sm"
+                            variant={applied ? "ghost" : "outline"}
+                            className="h-6 px-2 text-xs"
+                            disabled={applied}
+                            onClick={() => handleApplyChord(plan, idx)}
+                          >
+                            {applied ? (
+                              <><Check className="h-3 w-3 mr-1" />추가됨</>
+                            ) : "코드 추가"}
+                          </Button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* 그루브 적용 */}
+                {plan.grooveSuggestions.length > 0 && (
+                  <div className="flex flex-col gap-1 pt-1 border-t border-border/50">
+                    <span className="text-muted-foreground font-medium">그루브 제안</span>
+                    {plan.grooveSuggestions.map((gp, idx) => {
+                      const key = `${plan.id}-${idx}`;
+                      const applied = appliedGrooveIds.has(key);
+                      return (
+                        <div key={gp.id ?? idx} className="flex items-center justify-between gap-2">
+                          <span className="text-muted-foreground">{gp.name}</span>
+                          <Button
+                            size="sm"
+                            variant={applied ? "ghost" : "outline"}
+                            className="h-6 px-2 text-xs"
+                            disabled={applied}
+                            onClick={() => handleApplyGroove(plan, idx)}
+                          >
+                            {applied ? (
+                              <><Check className="h-3 w-3 mr-1" />추가됨</>
+                            ) : "그루브 추가"}
+                          </Button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* 사운드 키워드 / Suno 프롬프트 */}
+                <div className="flex gap-2 pt-1 border-t border-border/50">
+                  <Button
+                    size="sm"
+                    variant={appliedKeywordsId === plan.id ? "ghost" : "outline"}
+                    className="h-6 px-2 text-xs"
+                    disabled={appliedKeywordsId === plan.id}
+                    onClick={() => handleApplyKeywords(plan)}
+                  >
+                    {appliedKeywordsId === plan.id ? (
+                      <><Check className="h-3 w-3 mr-1" />키워드 적용됨</>
+                    ) : "사운드 키워드 적용"}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={sunoTryoutPlanId === plan.id ? "ghost" : "outline"}
+                    className="h-6 px-2 text-xs"
+                    disabled={sunoTryoutPlanId === plan.id}
+                    onClick={() => handleSunoTryout(plan)}
+                  >
+                    {sunoTryoutPlanId === plan.id ? (
+                      <><Check className="h-3 w-3 mr-1" />Suno 프롬프트 생성됨</>
+                    ) : "Suno 프롬프트 만들기"}
+                  </Button>
+                </div>
+
                 <p className="text-muted-foreground/70 italic">{plan.disclaimer}</p>
               </div>
             ))}
