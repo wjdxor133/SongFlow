@@ -5,6 +5,14 @@ export type SongBrief = {
   createdAt: string;
 };
 
+export type GeneratedPromptType =
+  | "full_song"
+  | "topline"
+  | "chorus_hook"
+  | "verse_melody"
+  | "remix_direction"
+  | "sound_design";
+
 export type GeneratedPrompt = {
   id: string;
   requestId: string;
@@ -15,6 +23,10 @@ export type GeneratedPrompt = {
   vocalFocused: string;
   grooveFocused: string;
   createdAt: string;
+  type?: GeneratedPromptType;
+  sourceTrackPlanId?: string;
+  sourceReferenceBriefId?: string;
+  versionLabel?: "safe" | "balanced" | "experimental";
 };
 
 export type ResultFeedback = {

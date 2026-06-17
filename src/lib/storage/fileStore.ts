@@ -3,6 +3,22 @@ import { appDataDir, join } from "@tauri-apps/api/path";
 import type { StorageData } from "../types/album";
 import { emptyStorage } from "../core/dataModel";
 
+export const CURRENT_SCHEMA_VERSION = 3;
+
+function migrate(data: StorageData): StorageData {
+  if ((data.schemaVersion ?? 0) >= CURRENT_SCHEMA_VERSION) return data;
+  return {
+    ...data,
+    schemaVersion: CURRENT_SCHEMA_VERSION,
+    tracks: data.tracks.map((t) => ({
+      ...t,
+      referenceBriefs: t.referenceBriefs ?? [],
+      trackPlans: t.trackPlans ?? [],
+      learningMissions: t.learningMissions ?? [],
+    })),
+  };
+}
+
 let resolvedDataPath: string | null = null;
 
 async function getDataPath(): Promise<string> {
@@ -23,7 +39,8 @@ export async function loadData(): Promise<StorageData> {
     const fileExists = await exists(path);
     if (!fileExists) return emptyStorage();
     const raw = await readTextFile(path);
-    return JSON.parse(raw) as StorageData;
+    const parsed = JSON.parse(raw) as StorageData;
+    return migrate(parsed);
   } catch {
     return emptyStorage();
   }

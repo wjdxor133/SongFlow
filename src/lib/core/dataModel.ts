@@ -1,7 +1,7 @@
 import type { Album, Track, StorageData } from "../types/album";
 
 export function emptyStorage(): StorageData {
-  return { version: 0, albums: [], tracks: [] };
+  return { version: 0, schemaVersion: 3, albums: [], tracks: [] };
 }
 
 export function createAlbum(
@@ -77,6 +77,9 @@ export function createTrack(
     agentRequests: [],
     agentResponses: [],
     notes: [],
+    referenceBriefs: [],
+    trackPlans: [],
+    learningMissions: [],
     createdAt: now,
     updatedAt: now,
   };
@@ -112,6 +115,9 @@ export function updateTrack(
       | "referenceAnalyses"
       | "chordProgressions"
       | "groovePatterns"
+      | "referenceBriefs"
+      | "trackPlans"
+      | "learningMissions"
     >
   >
 ): StorageData {
@@ -148,7 +154,7 @@ export function appendToTrack<K extends keyof Track>(
     ...data,
     tracks: data.tracks.map((t) => {
       if (t.id !== trackId) return t;
-      const arr = t[field] as unknown[];
+      const arr = ((t[field] ?? []) as unknown[]);
       return {
         ...t,
         [field]: [...arr, item],
