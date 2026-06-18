@@ -11,10 +11,17 @@ export function Settings() {
   const isLoaded = useConfigStore((s) => s.isLoaded);
   const setAnthropicApiKey = useConfigStore((s) => s.setAnthropicApiKey);
   const clearAnthropicApiKey = useConfigStore((s) => s.clearAnthropicApiKey);
+  const setSpotifyCredentials = useConfigStore((s) => s.setSpotifyCredentials);
+  const clearSpotifyCredentials = useConfigStore((s) => s.clearSpotifyCredentials);
 
   const [keyInput, setKeyInput] = useState("");
   const [showKey, setShowKey] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
+  const [spotifyClientId, setSpotifyClientId] = useState("");
+  const [spotifyClientSecret, setSpotifyClientSecret] = useState("");
+  const [showSpotifySecret, setShowSpotifySecret] = useState(false);
+  const [isSavingSpotify, setIsSavingSpotify] = useState(false);
 
   useEffect(() => {
     if (!isLoaded) {
@@ -25,10 +32,34 @@ export function Settings() {
   useEffect(() => {
     if (isLoaded) {
       setKeyInput(config.anthropicApiKey);
+      setSpotifyClientId(config.spotifyClientId ?? "");
+      setSpotifyClientSecret(config.spotifyClientSecret ?? "");
     }
-  }, [isLoaded, config.anthropicApiKey]);
+  }, [isLoaded, config.anthropicApiKey, config.spotifyClientId, config.spotifyClientSecret]);
 
   const hasKey = config.anthropicApiKey.length > 0;
+  const hasSpotify = !!(config.spotifyClientId && config.spotifyClientSecret);
+
+  async function handleSaveSpotify(e: React.FormEvent) {
+    e.preventDefault();
+    setIsSavingSpotify(true);
+    try {
+      await setSpotifyCredentials(spotifyClientId.trim(), spotifyClientSecret.trim());
+    } finally {
+      setIsSavingSpotify(false);
+    }
+  }
+
+  async function handleClearSpotify() {
+    setIsSavingSpotify(true);
+    try {
+      await clearSpotifyCredentials();
+      setSpotifyClientId("");
+      setSpotifyClientSecret("");
+    } finally {
+      setIsSavingSpotify(false);
+    }
+  }
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -125,6 +156,73 @@ export function Settings() {
           <p className="text-xs text-muted-foreground">
             API 키는 https://console.anthropic.com 에서 발급받을 수 있어요.
           </p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between gap-3">
+            <CardTitle>Spotify API</CardTitle>
+            <Badge
+              className={
+                hasSpotify
+                  ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                  : ""
+              }
+              variant={hasSpotify ? "outline" : "secondary"}
+            >
+              {hasSpotify ? "연결됨" : "미설정"}
+            </Badge>
+          </div>
+          <CardDescription>
+            앨범 불러오기 기능에 사용돼요. developer.spotify.com에서 앱을 만들고 Client ID/Secret을 발급받으세요. 무료로 사용 가능합니다.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3">
+          <form onSubmit={handleSaveSpotify} className="flex flex-col gap-3">
+            <div className="space-y-1.5">
+              <label className="text-xs text-muted-foreground">Client ID</label>
+              <Input
+                value={spotifyClientId}
+                onChange={(e) => setSpotifyClientId(e.target.value)}
+                placeholder="Spotify Client ID"
+                autoComplete="off"
+                spellCheck={false}
+                disabled={isSavingSpotify}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs text-muted-foreground">Client Secret</label>
+              <div className="relative">
+                <Input
+                  className="pr-10"
+                  type={showSpotifySecret ? "text" : "password"}
+                  value={spotifyClientSecret}
+                  onChange={(e) => setSpotifyClientSecret(e.target.value)}
+                  placeholder="Spotify Client Secret"
+                  autoComplete="off"
+                  spellCheck={false}
+                  disabled={isSavingSpotify}
+                />
+                <button
+                  type="button"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground transition-colors hover:text-foreground"
+                  onClick={() => setShowSpotifySecret((v) => !v)}
+                  tabIndex={-1}
+                >
+                  {showSpotifySecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button type="submit" size="sm" disabled={isSavingSpotify || !spotifyClientId.trim() || !spotifyClientSecret.trim()}>
+                {isSavingSpotify ? "저장 중..." : "저장"}
+              </Button>
+              <Button type="button" variant="outline" size="sm" disabled={isSavingSpotify || !hasSpotify} onClick={handleClearSpotify}>
+                초기화
+              </Button>
+            </div>
+          </form>
         </CardContent>
       </Card>
 

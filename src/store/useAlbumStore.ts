@@ -61,6 +61,7 @@ type AlbumStore = {
       key?: string;
       concept?: string;
       lyrics?: string;
+      sourceTrack?: import("../lib/types/album").SourceTrack;
     }
   ) => Promise<Track>;
   updateTrack: (

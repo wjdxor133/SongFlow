@@ -3,9 +3,15 @@ import { appDataDir } from "@tauri-apps/api/path";
 
 export type AppConfig = {
   anthropicApiKey: string;
+  spotifyClientId: string;
+  spotifyClientSecret: string;
 };
 
-const defaultConfig = (): AppConfig => ({ anthropicApiKey: "" });
+const defaultConfig = (): AppConfig => ({
+  anthropicApiKey: "",
+  spotifyClientId: "",
+  spotifyClientSecret: "",
+});
 
 async function getConfigPath(): Promise<string> {
   const dir = await appDataDir();
