@@ -3,9 +3,17 @@ import { useConfigStore } from "../../store/useConfigStore";
 import type { Track } from "../../lib/types/album";
 import type { ChordProgression, GroovePattern } from "../../lib/types/music";
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Play, Square, Plus, X, Sparkles, Loader2 } from "lucide-react";
+import { Play, Square, Plus, Sparkles, Loader2 } from "lucide-react";
 import * as Tone from "tone";
 import { Input } from "../ui/input";
+import { Button } from "../ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "../ui/dialog";
 import { callClaude } from "../../lib/ai/anthropic";
 import { buildPrompt } from "../../lib/agent/prompts";
 import type { Album } from "../../lib/types/album";
@@ -199,8 +207,8 @@ function AddChordProgressionForm({ onAdd }: { onAdd: (cp: Omit<ChordProgression,
     setOpen(false);
   }
 
-  if (!open) {
-    return (
+  return (
+    <>
       <button
         type="button"
         onClick={() => setOpen(true)}
@@ -209,73 +217,70 @@ function AddChordProgressionForm({ onAdd }: { onAdd: (cp: Omit<ChordProgression,
         <Plus className="h-3.5 w-3.5" />
         코드 진행 추가
       </button>
-    );
-  }
 
-  return (
-    <form onSubmit={handleSubmit} className="rounded-lg border bg-muted/20 p-3 flex flex-col gap-2.5">
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-medium">새 코드 진행</span>
-        <button type="button" onClick={() => setOpen(false)}>
-          <X className="h-3.5 w-3.5 text-muted-foreground" />
-        </button>
-      </div>
-      <div>
-        <label className="text-xs text-muted-foreground">코드 (공백으로 구분) *</label>
-        <Input
-          value={chordsInput}
-          onChange={(e) => setChordsInput(e.target.value)}
-          placeholder="Cm Fm Ab Bb"
-          required
-          autoFocus
-        />
-      </div>
-      <div className="grid grid-cols-3 gap-2">
-        <div>
-          <label className="text-xs text-muted-foreground">이름</label>
-          <Input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="선택 사항"
-          />
-        </div>
-        <div>
-          <label className="text-xs text-muted-foreground">Key</label>
-          <Input
-            value={key}
-            onChange={(e) => setKey(e.target.value)}
-            placeholder="C"
-          />
-        </div>
-        <div>
-          <label className="text-xs text-muted-foreground">BPM</label>
-          <Input
-            value={bpm}
-            onChange={(e) => setBpm(e.target.value)}
-            placeholder="100"
-            type="number"
-            min={1}
-            max={300}
-          />
-        </div>
-      </div>
-      <div className="flex items-center gap-2">
-        <label className="text-xs text-muted-foreground">모드</label>
-        <button
-          type="button"
-          onClick={() => setMode(mode === "major" ? "minor" : "major")}
-          className="text-xs px-2 py-0.5 rounded-full border hover:bg-muted transition-colors"
-        >
-          {mode === "major" ? "Major" : "Minor"}
-        </button>
-      </div>
-      <button
-        type="submit"
-        className="self-end rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
-      >
-        추가
-      </button>
-    </form>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>코드 진행 추가</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+            <div>
+              <label className="text-xs text-muted-foreground">코드 (공백으로 구분) *</label>
+              <Input
+                value={chordsInput}
+                onChange={(e) => setChordsInput(e.target.value)}
+                placeholder="Cm Fm Ab Bb"
+                required
+                autoFocus
+              />
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              <div>
+                <label className="text-xs text-muted-foreground">이름</label>
+                <Input
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="선택 사항"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground">Key</label>
+                <Input
+                  value={key}
+                  onChange={(e) => setKey(e.target.value)}
+                  placeholder="C"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground">BPM</label>
+                <Input
+                  value={bpm}
+                  onChange={(e) => setBpm(e.target.value)}
+                  placeholder="100"
+                  type="number"
+                  min={1}
+                  max={300}
+                />
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-xs text-muted-foreground">모드</label>
+              <button
+                type="button"
+                onClick={() => setMode(mode === "major" ? "minor" : "major")}
+                className="text-xs px-2 py-0.5 rounded-full border hover:bg-muted transition-colors"
+              >
+                {mode === "major" ? "Major" : "Minor"}
+              </button>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" size="sm" onClick={() => setOpen(false)}>취소</Button>
+              <Button type="submit" size="sm" disabled={!chordsInput.trim()}>추가</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
