@@ -29,12 +29,21 @@ function TrackCard({
   onDelete: (id: string) => void;
 }) {
   const navigate = useNavigate();
+  const [confirming, setConfirming] = useState(false);
 
-  function handleDelete(e: React.MouseEvent) {
+  function handleDeleteClick(e: React.MouseEvent) {
     e.stopPropagation();
-    if (window.confirm(`Delete "${track.title}"? This cannot be undone.`)) {
-      onDelete(track.id);
-    }
+    setConfirming(true);
+  }
+
+  function handleConfirm(e: React.MouseEvent) {
+    e.stopPropagation();
+    onDelete(track.id);
+  }
+
+  function handleCancel(e: React.MouseEvent) {
+    e.stopPropagation();
+    setConfirming(false);
   }
 
   return (
@@ -46,13 +55,30 @@ function TrackCard({
         <h3 className="line-clamp-1 text-sm font-semibold leading-tight">
           {track.title}
         </h3>
-        <button
-          className="shrink-0 rounded p-1 opacity-0 transition-opacity hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
-          onClick={handleDelete}
-          title="Delete track"
-        >
-          <Trash2 className="h-3.5 w-3.5" />
-        </button>
+        {confirming ? (
+          <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+            <button
+              className="rounded px-1.5 py-0.5 text-xs text-destructive hover:bg-destructive/10"
+              onClick={handleConfirm}
+            >
+              삭제
+            </button>
+            <button
+              className="rounded px-1.5 py-0.5 text-xs text-muted-foreground hover:bg-muted"
+              onClick={handleCancel}
+            >
+              취소
+            </button>
+          </div>
+        ) : (
+          <button
+            className="shrink-0 rounded p-1 opacity-0 transition-opacity hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
+            onClick={handleDeleteClick}
+            title="Delete track"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        )}
       </div>
 
       {track.concept && (
