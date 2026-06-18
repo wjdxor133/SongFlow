@@ -21,6 +21,14 @@ export type TrackNote = {
   updatedAt: string;
 };
 
+export type SourceTrack = {
+  spotifyId: string;
+  artist: string;
+  album: string;
+  title: string;
+  year?: number;
+};
+
 export type Track = {
   id: string;
   albumId: string;
@@ -30,6 +38,7 @@ export type Track = {
   key?: string;
   concept?: string;
   lyrics?: string;
+  sourceTrack?: SourceTrack;
   references: ReferenceSong[];
   referenceAnalyses: ReferenceAnalysis[];
   chordProgressions: ChordProgression[];

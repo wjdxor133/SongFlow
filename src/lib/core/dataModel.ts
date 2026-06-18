@@ -54,6 +54,7 @@ export function createTrack(
     key?: string;
     concept?: string;
     lyrics?: string;
+    sourceTrack?: import("../types/album").SourceTrack;
   }
 ): { data: StorageData; track: Track } {
   const now = new Date().toISOString();
@@ -66,6 +67,7 @@ export function createTrack(
     key: input.key,
     concept: input.concept,
     lyrics: input.lyrics,
+    sourceTrack: input.sourceTrack,
     references: [],
     referenceAnalyses: [],
     chordProgressions: [],

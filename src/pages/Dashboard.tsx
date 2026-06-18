@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Trash2, Disc3 } from "lucide-react";
+import { Trash2, Disc3, Download } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
-import { CreateAlbumDialog } from "../components/projects/CreateAlbumDialog";
+import { ImportAlbumDialog } from "../components/projects/ImportAlbumDialog";
 import { useAlbumStore } from "../store/useAlbumStore";
 import type { Album } from "../lib/types/album";
 
@@ -79,7 +79,7 @@ export function Dashboard() {
   const tracks = useAlbumStore((s) => s.tracks);
   const deleteAlbum = useAlbumStore((s) => s.deleteAlbum);
   const isLoaded = useAlbumStore((s) => s.isLoaded);
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
 
   useEffect(() => {
     if (!isLoaded) {
@@ -98,9 +98,9 @@ export function Dashboard() {
               : `${albums.length} album${albums.length !== 1 ? "s" : ""}`}
           </p>
         </div>
-        <Button onClick={() => setDialogOpen(true)}>
-          <Plus className="mr-1.5 h-4 w-4" />
-          New Album
+        <Button onClick={() => setImportOpen(true)}>
+          <Download className="mr-1.5 h-4 w-4" />
+          앨범 불러오기
         </Button>
       </div>
 
@@ -113,12 +113,12 @@ export function Dashboard() {
             <div>
               <p className="text-sm font-medium">No albums yet</p>
               <p className="mt-1 text-xs text-muted-foreground">
-                Click "New Album" to create your first album.
+                앨범 불러오기로 첫 번째 프로젝트를 시작해보세요.
               </p>
             </div>
-            <Button size="sm" onClick={() => setDialogOpen(true)}>
-              <Plus className="mr-1.5 h-3.5 w-3.5" />
-              New Album
+            <Button size="sm" onClick={() => setImportOpen(true)}>
+              <Download className="mr-1.5 h-3.5 w-3.5" />
+              앨범 불러오기
             </Button>
           </div>
         </div>
@@ -135,7 +135,7 @@ export function Dashboard() {
         </div>
       )}
 
-      <CreateAlbumDialog open={dialogOpen} onOpenChange={setDialogOpen} />
+      <ImportAlbumDialog open={importOpen} onOpenChange={setImportOpen} />
     </div>
   );
 }
