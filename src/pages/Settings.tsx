@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -7,6 +8,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../co
 import { useConfigStore } from "../store/useConfigStore";
 
 export function Settings() {
+  const navigate = useNavigate();
   const config = useConfigStore((s) => s.config);
   const isLoaded = useConfigStore((s) => s.isLoaded);
   const setAnthropicApiKey = useConfigStore((s) => s.setAnthropicApiKey);
@@ -89,6 +91,22 @@ export function Settings() {
           AI 연동을 위한 API 키를 관리하세요.
         </p>
       </div>
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between gap-3">
+            <CardTitle>온보딩</CardTitle>
+          </div>
+          <CardDescription>
+            가이드 샘플을 통해 SongFlow의 핵심 기능을 체험해볼 수 있어요.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button variant="outline" size="sm" onClick={() => navigate("/guided")}>
+            🎵 가이드 다시 보기
+          </Button>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

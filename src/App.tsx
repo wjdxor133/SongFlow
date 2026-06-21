@@ -4,6 +4,7 @@ import { Dashboard } from "./pages/Dashboard";
 import { AlbumDetail } from "./pages/AlbumDetail";
 import { TrackDetail } from "./pages/TrackDetail";
 import { Settings } from "./pages/Settings";
+import { GuidedSample } from "./pages/GuidedSample";
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
           <Route path="albums/:albumId" element={<AlbumDetail />} />
           <Route path="albums/:albumId/tracks/:trackId" element={<TrackDetail />} />
           <Route path="settings" element={<Settings />} />
+          <Route path="guided" element={<GuidedSample />} />
         </Route>
       </Routes>
     </BrowserRouter>
