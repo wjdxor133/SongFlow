@@ -100,18 +100,33 @@ function AlbumCard({
   );
 }
 
+function getOnboardingCompleted(): boolean {
+  try {
+    return localStorage.getItem("songflow.onboarding.completed") === "1";
+  } catch {
+    return false;
+  }
+}
+
 export function Dashboard() {
   const albums = useAlbumStore((s) => s.albums);
   const tracks = useAlbumStore((s) => s.tracks);
   const deleteAlbum = useAlbumStore((s) => s.deleteAlbum);
   const isLoaded = useAlbumStore((s) => s.isLoaded);
   const [importOpen, setImportOpen] = useState(false);
+  const navigate = useNavigate();
+  const [onboardingCompleted, setOnboardingCompleted] = useState(getOnboardingCompleted);
 
   useEffect(() => {
     if (!isLoaded) {
       useAlbumStore.getState().init();
     }
   }, [isLoaded]);
+
+  // Re-read on mount so returning from the /guided flow reflects the latest state.
+  useEffect(() => {
+    setOnboardingCompleted(getOnboardingCompleted());
+  }, []);
 
   return (
     <div className="flex h-full flex-col gap-6 p-6">
@@ -132,20 +147,42 @@ export function Dashboard() {
 
       {albums.length === 0 ? (
         <div className="flex flex-1 items-center justify-center rounded-lg border border-dashed">
-          <div className="flex flex-col items-center gap-3 text-center">
+          <div className="flex flex-col items-center gap-4 text-center max-w-sm">
             <div className="rounded-full bg-muted p-3">
               <Disc3 className="h-6 w-6 text-muted-foreground" />
             </div>
             <div>
               <p className="text-sm font-medium">No albums yet</p>
               <p className="mt-1 text-xs text-muted-foreground">
-                앨범 불러오기로 첫 번째 프로젝트를 시작해보세요.
+                처음이라면 가이드 샘플로 SongFlow를 체험해보세요.
               </p>
             </div>
-            <Button size="sm" onClick={() => setImportOpen(true)}>
-              <Download className="mr-1.5 h-3.5 w-3.5" />
-              앨범 불러오기
-            </Button>
+            {!onboardingCompleted ? (
+              <div className="flex flex-col items-center gap-2 w-full">
+                <Button onClick={() => navigate("/guided")}>
+                  🎵 가이드 샘플로 시작하기
+                </Button>
+                <button
+                  className="text-xs text-muted-foreground underline-offset-2 hover:underline"
+                  onClick={() => setImportOpen(true)}
+                >
+                  또는 앨범 불러오기
+                </button>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center gap-2 w-full">
+                <Button size="sm" onClick={() => setImportOpen(true)}>
+                  <Download className="mr-1.5 h-3.5 w-3.5" />
+                  앨범 불러오기
+                </Button>
+                <button
+                  className="text-xs text-muted-foreground underline-offset-2 hover:underline"
+                  onClick={() => navigate("/guided")}
+                >
+                  가이드 다시 보기
+                </button>
+              </div>
+            )}
           </div>
         </div>
       ) : (

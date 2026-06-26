@@ -1,28 +1,11 @@
 import { useState } from "react";
-import { Copy, Check, Pencil, Trash2, X } from "lucide-react";
+import { Pencil, Trash2, X } from "lucide-react";
 import { Button } from "../ui/button";
 import { Textarea } from "../ui/textarea";
 import { useAlbumStore } from "../../store/useAlbumStore";
 import type { Track } from "../../lib/types/album";
 import type { GeneratedPrompt } from "../../lib/types/prompt";
-
-function CopyButton({ text }: { text: string }) {
-  const [copied, setCopied] = useState(false);
-  return (
-    <button
-      onClick={() => {
-        navigator.clipboard.writeText(text).then(() => {
-          setCopied(true);
-          setTimeout(() => setCopied(false), 2000);
-        });
-      }}
-      className="shrink-0 rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-      title="복사"
-    >
-      {copied ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
-    </button>
-  );
-}
+import { CopyButton } from "../ui/CopyButton";
 
 function formatDate(iso: string) {
   return new Intl.DateTimeFormat(undefined, {
