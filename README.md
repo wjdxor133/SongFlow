@@ -62,6 +62,24 @@ npm run tauri build
 
 ## 사용 방법
 
+### 전체 흐름 한눈에
+
+```
+설치 → (가이드 샘플 체험) → API 키 설정 → 앨범/트랙 생성
+   → Reference Coach 분석 → 코드·그루브·가사 생성 → Suno 프롬프트 → Suno에서 곡 생성
+```
+
+핵심 철학: **"어떤 곡을 레퍼런스로, 어떤 방향으로 만들지"를 한 곳에서 정리하고 Suno 프롬프트까지 자동화.** 아래는 가장 추천하는 전체 플로우입니다.
+
+1. Spotify로 레퍼런스 앨범 임포트 (또는 트랙 직접 생성)
+2. 트랙 진입 → **Reference Coach "분석 시작"** → 브리프·플랜·학습 미션 생성
+3. Track Plan에서 코드·그루브·사운드 키워드를 트랙에 **원클릭 적용**
+4. (정밀 가사가 필요하면) Claude Code에서 **`/lyrics-from-reference`** 스킬로 레퍼런스 음절 구조에 맞춘 가사 생성
+5. **Prompt Lab**의 Suno 프롬프트 복사 → Suno에서 곡 생성
+6. 결과를 듣고 가사·프롬프트를 이터레이션
+
+---
+
 ### 시작 전: 가이드 샘플 둘러보기 (API 키 불필요)
 
 처음 실행하면 Dashboard 빈 화면에서 **가이드 샘플로 시작** 버튼을 누를 수 있습니다.
@@ -159,6 +177,20 @@ claude mcp add songflow node /path/to/SongFlow/mcp-server/dist/server.js
 ```
 
 제공 툴: Album/Track CRUD, Reference Coach 데이터 관리, Suno 결과 저장 등 **21개 툴**
+
+#### `/lyrics-from-reference` 스킬 (정밀 가사 생성)
+
+Claude Code에서 레퍼런스 곡 구조에 맞춘 가사를 생성하는 전용 스킬입니다.
+레퍼런스의 섹션 구성·줄 수·**줄별 음절 수**(영어는 CMUdict 사전 기반으로 정밀 카운트)를
+분석해, 내용은 100% 오리지널이되 구조가 동일한 가사 + Suno 프롬프트를 만들어 SongFlow에 저장합니다.
+
+```
+/lyrics-from-reference Bruno Mars - Uptown Funk, track: New Wave, concept: 새벽 드라이브
+```
+
+> 구조·음절이 같으면 Suno가 비슷한 리듬·프레이징으로 곡을 뽑아내, 내용은 새로워도 레퍼런스의 "느낌"이 살아납니다. (정밀 음절 매칭은 영어 가사에 적용)
+
+> **두 가지 AI 작업 방식** — ① 앱 안의 **Reference Coach**(GUI 버튼)로 분석·플랜·프롬프트를 만들거나, ② **Claude Code + MCP/스킬**로 더 정밀하게 데이터를 조작하고 가사를 생성할 수 있습니다.
 
 ---
 
