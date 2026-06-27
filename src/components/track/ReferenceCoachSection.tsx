@@ -1,12 +1,7 @@
-import { useState } from "react";
 import { Check } from "lucide-react";
-import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "../ui/tabs";
 import { useAlbumStore } from "../../store/useAlbumStore";
 import type { Track } from "../../lib/types/album";
-import type { TrackPlan } from "../../lib/types/reference-coach";
-import type { GeneratedPrompt } from "../../lib/types/prompt";
 
 const CATEGORY_LABELS: Record<string, string> = {
   harmony: "화성",
@@ -36,73 +31,9 @@ interface ReferenceCoachSectionProps {
 
 export function ReferenceCoachSection({ track }: ReferenceCoachSectionProps) {
   const updateLearningMission = useAlbumStore((s) => s.updateLearningMission);
-  const updateTrack = useAlbumStore((s) => s.updateTrack);
-  const addSunoPromptTryout = useAlbumStore((s) => s.addSunoPromptTryout);
-
-  const [appliedChordIds, setAppliedChordIds] = useState<Set<string>>(new Set());
-  const [appliedGrooveIds, setAppliedGrooveIds] = useState<Set<string>>(new Set());
-  const [appliedKeywordsId, setAppliedKeywordsId] = useState<string | null>(null);
-  const [sunoTryoutPlanId, setSunoTryoutPlanId] = useState<string | null>(null);
 
   const referenceBriefs = track.referenceBriefs ?? [];
-  const trackPlans = track.trackPlans ?? [];
   const learningMissions = track.learningMissions ?? [];
-
-  async function handleApplyChord(plan: TrackPlan, chordIdx: number) {
-    const suggestion = plan.chordProgressionSuggestions[chordIdx];
-    if (!suggestion) return;
-    const newCp = { ...suggestion, id: crypto.randomUUID(), isDefault: false };
-    await updateTrack(track.id, {
-      chordProgressions: [...track.chordProgressions, newCp],
-    });
-    setAppliedChordIds((prev) => new Set(prev).add(`${plan.id}-${chordIdx}`));
-  }
-
-  async function handleApplyGroove(plan: TrackPlan, grooveIdx: number) {
-    const suggestion = plan.grooveSuggestions[grooveIdx];
-    if (!suggestion) return;
-    const newGp = { ...suggestion, id: crypto.randomUUID(), isDefault: false };
-    await updateTrack(track.id, {
-      groovePatterns: [...track.groovePatterns, newGp],
-    });
-    setAppliedGrooveIds((prev) => new Set(prev).add(`${plan.id}-${grooveIdx}`));
-  }
-
-  async function handleApplyKeywords(plan: TrackPlan) {
-    await updateTrack(track.id, { soundKeywords: plan.soundKeywords });
-    setAppliedKeywordsId(plan.id);
-  }
-
-  async function handleSunoTryout(plan: TrackPlan) {
-    const now = new Date().toISOString();
-    const kw = plan.soundKeywords;
-    const style = [
-      ...kw.drums.slice(0, 2),
-      ...kw.bass.slice(0, 2),
-      ...kw.melody.slice(0, 2),
-      ...kw.fx.slice(0, 1),
-    ]
-      .filter(Boolean)
-      .join(", ");
-
-    const prompt: GeneratedPrompt = {
-      id: crypto.randomUUID(),
-      requestId: crypto.randomUUID(),
-      style: style || plan.directionSummary,
-      lyrics: "",
-      moreRefreshing: "",
-      moreEmotional: "",
-      vocalFocused: kw.vocal.join(", "),
-      grooveFocused: [...kw.drums, ...kw.bass].join(", "),
-      type: "sound_design",
-      sourceTrackPlanId: plan.id,
-      sourceReferenceBriefId: plan.referenceBriefId,
-      versionLabel: "balanced",
-      createdAt: now,
-    };
-    await addSunoPromptTryout(track.id, prompt);
-    setSunoTryoutPlanId(plan.id);
-  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -115,15 +46,13 @@ export function ReferenceCoachSection({ track }: ReferenceCoachSectionProps) {
         </div>
       </div>
 
-      {referenceBriefs.length === 0 &&
-        trackPlans.length === 0 &&
-        learningMissions.length === 0 && (
-          <div className="rounded-lg border border-dashed p-4 text-center text-xs text-muted-foreground">
-            아직 분석 결과가 없어요. Claude Code의{" "}
-            <span className="font-medium text-foreground">reference-to-suno</span> 스킬로
-            생성하면 여기에 표시돼요.
-          </div>
-        )}
+      {referenceBriefs.length === 0 && learningMissions.length === 0 && (
+        <div className="rounded-lg border border-dashed p-4 text-center text-xs text-muted-foreground">
+          아직 분석 결과가 없어요. Claude Code의{" "}
+          <span className="font-medium text-foreground">reference-to-suno</span> 스킬로
+          생성하면 여기에 표시돼요.
+        </div>
+      )}
 
       {/* Reference Brief 결과 카드 — 데이터 있을 때만 표시 */}
       {referenceBriefs.length > 0 && (
@@ -155,130 +84,6 @@ export function ReferenceCoachSection({ track }: ReferenceCoachSectionProps) {
                     ))}
                   </div>
                 )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Track Plan 카드 — 데이터 있을 때만 표시, 탭으로 구성 */}
-      {trackPlans.length > 0 && (
-        <div className="rounded-lg border bg-muted/20 p-4 flex flex-col gap-3">
-          <div className="flex items-center justify-between">
-            <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Track Plan
-            </h3>
-            <Badge variant="secondary">{trackPlans.length}개</Badge>
-          </div>
-          <div className="flex flex-col gap-3">
-            {trackPlans.map((plan) => (
-              <div key={plan.id} className="rounded-md border bg-background p-3 text-xs flex flex-col gap-2">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium">{plan.title}</span>
-                  <Badge variant="outline" className={CONFIDENCE_STYLES[plan.confidence] ?? ""}>
-                    {CONFIDENCE_LABELS[plan.confidence] ?? plan.confidence}
-                  </Badge>
-                </div>
-                <Tabs defaultValue="overview">
-                  <TabsList className="h-7 text-xs">
-                    <TabsTrigger value="overview" className="text-xs px-2 py-0.5">개요</TabsTrigger>
-                    <TabsTrigger value="chords" className="text-xs px-2 py-0.5">코드</TabsTrigger>
-                    <TabsTrigger value="groove" className="text-xs px-2 py-0.5">그루브</TabsTrigger>
-                    <TabsTrigger value="apply" className="text-xs px-2 py-0.5">적용</TabsTrigger>
-                  </TabsList>
-
-                  <TabsContent value="overview" className="mt-2 flex flex-col gap-1.5">
-                    <p className="text-muted-foreground">{plan.directionSummary}</p>
-                    {plan.keySuggestions.length > 0 && (
-                      <div className="flex items-center gap-1 flex-wrap">
-                        <span className="text-muted-foreground">키:</span>
-                        {plan.keySuggestions.map((k) => (
-                          <Badge key={k} variant="secondary" className="text-xs">{k}</Badge>
-                        ))}
-                      </div>
-                    )}
-                    {plan.bpmSuggestions.length > 0 && (
-                      <p className="text-muted-foreground">BPM: {plan.bpmSuggestions.join(", ")}</p>
-                    )}
-                  </TabsContent>
-
-                  <TabsContent value="chords" className="mt-2 flex flex-col gap-1.5">
-                    {plan.chordProgressionSuggestions.length > 0 ? (
-                      plan.chordProgressionSuggestions.map((cp, idx) => {
-                        const key = `${plan.id}-${idx}`;
-                        const applied = appliedChordIds.has(key);
-                        return (
-                          <div key={cp.id ?? idx} className="flex items-center justify-between gap-2">
-                            <span className="text-muted-foreground">
-                              {cp.name}: {cp.chords.join(" - ")} ({cp.key} {cp.mode})
-                            </span>
-                            <Button
-                              size="sm"
-                              variant={applied ? "ghost" : "outline"}
-                              className="h-6 px-2 text-xs shrink-0"
-                              disabled={applied}
-                              onClick={() => handleApplyChord(plan, idx)}
-                            >
-                              {applied ? <><Check className="h-3 w-3 mr-1" />추가됨</> : "코드 추가"}
-                            </Button>
-                          </div>
-                        );
-                      })
-                    ) : (
-                      <p className="text-muted-foreground">코드 제안이 없어요.</p>
-                    )}
-                  </TabsContent>
-
-                  <TabsContent value="groove" className="mt-2 flex flex-col gap-1.5">
-                    {plan.grooveSuggestions.length > 0 ? (
-                      plan.grooveSuggestions.map((gp, idx) => {
-                        const key = `${plan.id}-${idx}`;
-                        const applied = appliedGrooveIds.has(key);
-                        return (
-                          <div key={gp.id ?? idx} className="flex items-center justify-between gap-2">
-                            <span className="text-muted-foreground">{gp.name}</span>
-                            <Button
-                              size="sm"
-                              variant={applied ? "ghost" : "outline"}
-                              className="h-6 px-2 text-xs shrink-0"
-                              disabled={applied}
-                              onClick={() => handleApplyGroove(plan, idx)}
-                            >
-                              {applied ? <><Check className="h-3 w-3 mr-1" />추가됨</> : "그루브 추가"}
-                            </Button>
-                          </div>
-                        );
-                      })
-                    ) : (
-                      <p className="text-muted-foreground">그루브 제안이 없어요.</p>
-                    )}
-                  </TabsContent>
-
-                  <TabsContent value="apply" className="mt-2 flex flex-col gap-2">
-                    <Button
-                      size="sm"
-                      variant={appliedKeywordsId === plan.id ? "ghost" : "outline"}
-                      className="h-7 px-3 text-xs self-start"
-                      disabled={appliedKeywordsId === plan.id}
-                      onClick={() => handleApplyKeywords(plan)}
-                    >
-                      {appliedKeywordsId === plan.id ? (
-                        <><Check className="h-3 w-3 mr-1" />키워드 적용됨</>
-                      ) : "사운드 키워드 적용"}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant={sunoTryoutPlanId === plan.id ? "ghost" : "outline"}
-                      className="h-7 px-3 text-xs self-start"
-                      disabled={sunoTryoutPlanId === plan.id}
-                      onClick={() => handleSunoTryout(plan)}
-                    >
-                      {sunoTryoutPlanId === plan.id ? (
-                        <><Check className="h-3 w-3 mr-1" />Suno 프롬프트 생성됨</>
-                      ) : "Suno 프롬프트 만들기"}
-                    </Button>
-                  </TabsContent>
-                </Tabs>
               </div>
             ))}
           </div>
