@@ -26,3 +26,9 @@ dist-ssr
 # Claude Code (ignore local settings, but track shared project skills)
 .claude/*
 !.claude/skills/
+
+# Generated project artifacts (presentations, briefs)
+*.pptx
+*.pdf
+SongFlow-Project-Brief.*
+songflow-project-brief.*
