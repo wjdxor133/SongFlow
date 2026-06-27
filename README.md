@@ -92,6 +92,7 @@ npm run tauri build
 설치 → MCP 서버 등록 → (가이드 샘플 체험)
    → Claude Code에서 reference-to-suno 스킬 실행 (곡 → 가사 → 컨셉/언어)
    → 앱에서 결과 확인 → 프롬프트·가사 복사 → Suno 생성 → DAW에서 멜로디·믹싱
+   ↺ 별로면 refine-suno 스킬로 "어디가 별로였는지" 말하고 프롬프트·설정 갱신 → 다시 생성
 ```
 
 ### MCP 서버 등록 (필수)
@@ -113,6 +114,9 @@ claude mcp add songflow node /path/to/SongFlow/mcp-server/dist/server.js
 
 ### reference-to-suno 스킬
 `.claude/skills/reference-to-suno/`에 포함되어 있습니다. Claude Code에서 곡 이름을 던지면 위 [핵심] 흐름대로 트랙을 만들어 앱에 기록합니다. 원곡 가사는 음절 정밀 매칭을 위해 붙여넣기로 받습니다(한국 신곡 등은 웹 자동 추출이 막히는 경우가 많아 붙여넣기가 기본).
+
+### refine-suno 스킬 (이터레이션)
+`.claude/skills/refine-suno/`. Suno로 뽑아 들어본 뒤 "어디가 별로였는지"(예: "후렴 약함", "보컬이 묻혀")를 말하면, 증상을 레버(Suno style/설정/가사/코드)에 매핑해 트랙의 프롬프트·설정을 갱신합니다. 트랙당 프롬프트는 1개로 교체됩니다.
 
 ### 가이드 샘플 둘러보기 (API 키 불필요)
 처음 실행하면 Dashboard에서 **가이드 샘플로 시작**으로 전체 흐름을 키 입력 없이 체험할 수 있습니다. 언제든 **Settings → 가이드 다시 보기**로 다시 볼 수 있습니다.
