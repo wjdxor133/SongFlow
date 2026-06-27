@@ -103,6 +103,7 @@ export function updateTrack(
       | "key"
       | "concept"
       | "lyrics"
+      | "sunoSettings"
       | "selectedChordProgressionId"
       | "selectedGroovePatternId"
       | "soundKeywords"

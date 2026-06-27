@@ -317,6 +317,21 @@ const TOOLS = [
       required: ["trackId", "progressions"],
     },
   },
+  {
+    name: "save_suno_settings",
+    description: "Save recommended Suno generation settings to a track (Weirdness / Style Influence / Audio Influence / expected style). Shown as a separate card in PromptLab.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        trackId: { type: "string" },
+        weirdness: { type: "number", description: "0-100 (%)" },
+        styleInfluence: { type: "number", description: "0-100 (%)" },
+        audioInfluence: { type: "number", description: "0-100 (%); omit for off (no audio reference)" },
+        expectedStyle: { type: "string", description: "English one-liner describing expected output" },
+      },
+      required: ["trackId", "weirdness", "styleInfluence", "expectedStyle"],
+    },
+  },
 ] as const;
 
 // ─── Tool handlers ────────────────────────────────────────────────────────────
@@ -478,7 +493,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               ...track,
               agentRequests: [...track.agentRequests, req],
               agentResponses: [...track.agentResponses, res],
-              prompts: generatedPrompt ? [...track.prompts, generatedPrompt] : track.prompts,
+              // 트랙당 Suno 프롬프트는 1개만 유지 — generate_suno_prompts는 기존 프롬프트를 교체
+              prompts: generatedPrompt ? [generatedPrompt] : track.prompts,
               updatedAt: t,
             };
           });
@@ -599,6 +615,26 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           ),
         }));
         return { content: [{ type: "text", text: JSON.stringify(created, null, 2) }] };
+      }
+
+      case "save_suno_settings": {
+        const t = now();
+        if (!loadData().tracks.find((tr) => tr.id === a.trackId)) {
+          return { content: [{ type: "text", text: `Track ${a.trackId} not found` }], isError: true };
+        }
+        const settings = {
+          weirdness: Number(a.weirdness),
+          styleInfluence: Number(a.styleInfluence),
+          audioInfluence: a.audioInfluence !== undefined ? Number(a.audioInfluence) : null,
+          expectedStyle: String(a.expectedStyle),
+        };
+        withCAS((data) => ({
+          ...data,
+          tracks: data.tracks.map((track) =>
+            track.id === a.trackId ? { ...track, sunoSettings: settings, updatedAt: t } : track
+          ),
+        }));
+        return { content: [{ type: "text", text: JSON.stringify(settings, null, 2) }] };
       }
 
       case "save_track_plan": {

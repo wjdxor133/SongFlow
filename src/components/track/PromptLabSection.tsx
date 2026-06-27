@@ -156,6 +156,41 @@ function PromptCard({ prompt, onDelete, onSave }: PromptCardProps) {
   );
 }
 
+function SunoSettingsCard({ settings }: { settings: NonNullable<Track["sunoSettings"]> }) {
+  const rows: { label: string; value: string }[] = [
+    { label: "Weirdness", value: `${settings.weirdness}%` },
+    { label: "Style Influence", value: `${settings.styleInfluence}%` },
+    {
+      label: "Audio Influence",
+      value: settings.audioInfluence == null ? "Off" : `${settings.audioInfluence}%`,
+    },
+  ];
+  return (
+    <div className="rounded-lg border bg-muted/20 p-3 flex flex-col gap-2">
+      <span className="text-xs font-medium text-muted-foreground">Suno Settings</span>
+      <div className="grid grid-cols-3 gap-2">
+        {rows.map((r) => (
+          <div key={r.label} className="rounded bg-background border p-2 flex flex-col gap-0.5">
+            <span className="text-[10px] uppercase tracking-wide text-muted-foreground">{r.label}</span>
+            <span className="text-sm font-semibold">{r.value}</span>
+          </div>
+        ))}
+      </div>
+      {settings.expectedStyle && (
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Expected</span>
+            <CopyButton text={settings.expectedStyle} />
+          </div>
+          <p className="text-sm bg-background rounded p-2 border leading-relaxed">
+            {settings.expectedStyle}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 interface Props {
   track: Track;
 }
@@ -163,7 +198,7 @@ interface Props {
 export function PromptLabSection({ track }: Props) {
   const updateTrack = useAlbumStore((s) => s.updateTrack);
 
-  if (track.prompts.length === 0) return null;
+  if (track.prompts.length === 0 && !track.sunoSettings) return null;
 
   async function handleDelete(id: string) {
     await updateTrack(track.id, {
@@ -179,13 +214,9 @@ export function PromptLabSection({ track }: Props) {
 
   return (
     <div className="flex flex-col gap-3">
-      <h2 className="text-sm font-semibold">
-        Prompt Lab{" "}
-        <span className="text-sm font-normal text-muted-foreground">
-          ({track.prompts.length})
-        </span>
-      </h2>
+      <h2 className="text-sm font-semibold">Prompt Lab</h2>
       <div className="flex flex-col gap-2">
+        {track.sunoSettings && <SunoSettingsCard settings={track.sunoSettings} />}
         {track.prompts
           .slice()
           .reverse()
