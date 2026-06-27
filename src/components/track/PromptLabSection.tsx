@@ -216,7 +216,6 @@ export function PromptLabSection({ track }: Props) {
     <div className="flex flex-col gap-3">
       <h2 className="text-sm font-semibold">Prompt Lab</h2>
       <div className="flex flex-col gap-2">
-        {track.sunoSettings && <SunoSettingsCard settings={track.sunoSettings} />}
         {track.prompts
           .slice()
           .reverse()
@@ -228,6 +227,7 @@ export function PromptLabSection({ track }: Props) {
               onSave={handleSave}
             />
           ))}
+        {track.sunoSettings && <SunoSettingsCard settings={track.sunoSettings} />}
       </div>
     </div>
   );
