@@ -1,17 +1,9 @@
 import { readTextFile, writeTextFile, mkdir, exists } from "@tauri-apps/plugin-fs";
 import { appDataDir } from "@tauri-apps/api/path";
 
-export type AppConfig = {
-  anthropicApiKey: string;
-  spotifyClientId: string;
-  spotifyClientSecret: string;
-};
+export type AppConfig = {};
 
-const defaultConfig = (): AppConfig => ({
-  anthropicApiKey: "",
-  spotifyClientId: "",
-  spotifyClientSecret: "",
-});
+const defaultConfig = (): AppConfig => ({});
 
 async function getConfigPath(): Promise<string> {
   const dir = await appDataDir();

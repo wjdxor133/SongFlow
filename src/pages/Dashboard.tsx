@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Trash2, Disc3, Download } from "lucide-react";
+import { Trash2, Disc3 } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
-import { ImportAlbumDialog } from "../components/projects/ImportAlbumDialog";
 import { useAlbumStore } from "../store/useAlbumStore";
 import type { Album } from "../lib/types/album";
 
@@ -113,7 +112,6 @@ export function Dashboard() {
   const tracks = useAlbumStore((s) => s.tracks);
   const deleteAlbum = useAlbumStore((s) => s.deleteAlbum);
   const isLoaded = useAlbumStore((s) => s.isLoaded);
-  const [importOpen, setImportOpen] = useState(false);
   const navigate = useNavigate();
   const [onboardingCompleted, setOnboardingCompleted] = useState(getOnboardingCompleted);
 
@@ -139,10 +137,6 @@ export function Dashboard() {
               : `${albums.length} album${albums.length !== 1 ? "s" : ""}`}
           </p>
         </div>
-        <Button onClick={() => setImportOpen(true)}>
-          <Download className="mr-1.5 h-4 w-4" />
-          앨범 불러오기
-        </Button>
       </div>
 
       {albums.length === 0 ? (
@@ -162,19 +156,15 @@ export function Dashboard() {
                 <Button onClick={() => navigate("/guided")}>
                   🎵 가이드 샘플로 시작하기
                 </Button>
-                <button
-                  className="text-xs text-muted-foreground underline-offset-2 hover:underline"
-                  onClick={() => setImportOpen(true)}
-                >
-                  또는 앨범 불러오기
-                </button>
+                <p className="text-xs text-muted-foreground">
+                  또는 Claude Code 스킬로 앨범을 가져오세요.
+                </p>
               </div>
             ) : (
               <div className="flex flex-col items-center gap-2 w-full">
-                <Button size="sm" onClick={() => setImportOpen(true)}>
-                  <Download className="mr-1.5 h-3.5 w-3.5" />
-                  앨범 불러오기
-                </Button>
+                <p className="text-xs text-muted-foreground">
+                  Claude Code 스킬로 앨범을 가져오면 여기에 표시돼요.
+                </p>
                 <button
                   className="text-xs text-muted-foreground underline-offset-2 hover:underline"
                   onClick={() => navigate("/guided")}
@@ -197,8 +187,6 @@ export function Dashboard() {
           ))}
         </div>
       )}
-
-      <ImportAlbumDialog open={importOpen} onOpenChange={setImportOpen} />
     </div>
   );
 }
