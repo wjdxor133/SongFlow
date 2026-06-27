@@ -292,6 +292,31 @@ const TOOLS = [
       required: ["trackId", "missionId"],
     },
   },
+  {
+    name: "save_chord_progressions",
+    description: "Save one or more chord progressions directly to a track (appended to track.chordProgressions)",
+    inputSchema: {
+      type: "object",
+      properties: {
+        trackId: { type: "string" },
+        progressions: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              name: { type: "string" },
+              chords: { type: "array", items: { type: "string" }, description: "e.g. [\"Cm\", \"Ab\", \"Eb\", \"Bb\"]" },
+              key: { type: "string", description: "e.g. C" },
+              mode: { type: "string", enum: ["major", "minor"] },
+              bpm: { type: "number" },
+            },
+            required: ["name", "chords", "key", "mode"],
+          },
+        },
+      },
+      required: ["trackId", "progressions"],
+    },
+  },
 ] as const;
 
 // ─── Tool handlers ────────────────────────────────────────────────────────────
@@ -548,6 +573,32 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const track = data.tracks.find((t) => t.id === a.trackId);
         if (!track) return { content: [{ type: "text", text: `Track ${a.trackId} not found` }], isError: true };
         return { content: [{ type: "text", text: JSON.stringify(track.referenceBriefs ?? [], null, 2) }] };
+      }
+
+      case "save_chord_progressions": {
+        const t = now();
+        if (!loadData().tracks.find((tr) => tr.id === a.trackId)) {
+          return { content: [{ type: "text", text: `Track ${a.trackId} not found` }], isError: true };
+        }
+        const input = Array.isArray(a.progressions) ? (a.progressions as Record<string, unknown>[]) : [];
+        const created = input.map((p) => ({
+          id: randomId(),
+          name: String(p.name),
+          chords: Array.isArray(p.chords) ? p.chords.map(String) : [],
+          key: String(p.key),
+          mode: (["major", "minor"].includes(String(p.mode)) ? p.mode : "minor") as "major" | "minor",
+          ...(p.bpm !== undefined ? { bpm: Number(p.bpm) } : {}),
+          isDefault: false,
+        }));
+        withCAS((data) => ({
+          ...data,
+          tracks: data.tracks.map((track) =>
+            track.id === a.trackId
+              ? { ...track, chordProgressions: [...track.chordProgressions, ...created], updatedAt: t }
+              : track
+          ),
+        }));
+        return { content: [{ type: "text", text: JSON.stringify(created, null, 2) }] };
       }
 
       case "save_track_plan": {

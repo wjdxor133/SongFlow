@@ -1,9 +1,8 @@
 import { useAlbumStore } from "../../store/useAlbumStore";
-import { useConfigStore } from "../../store/useConfigStore";
 import type { Track } from "../../lib/types/album";
 import type { ChordProgression, GroovePattern } from "../../lib/types/music";
 import { useState } from "react";
-import { Plus, Sparkles, Loader2 } from "lucide-react";
+import { Plus } from "lucide-react";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 import {
@@ -13,9 +12,6 @@ import {
   DialogTitle,
   DialogFooter,
 } from "../ui/dialog";
-import { callClaude } from "../../lib/ai/anthropic";
-import { buildPrompt } from "../../lib/agent/prompts";
-import type { Album } from "../../lib/types/album";
 import { ChordPlayback } from "./ChordPlayback";
 
 function GrooveCard({ gp, isSelected }: { gp: GroovePattern; isSelected: boolean }) {
@@ -171,14 +167,10 @@ function AddChordProgressionForm({ onAdd }: { onAdd: (cp: Omit<ChordProgression,
 
 interface Props {
   track: Track;
-  album: Album;
 }
 
-export function ChordGrooveSection({ track, album }: Props) {
+export function ChordGrooveSection({ track }: Props) {
   const updateTrack = useAlbumStore((s) => s.updateTrack);
-  const apiKey = useConfigStore((s) => s.config.anthropicApiKey);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [generateError, setGenerateError] = useState<string | null>(null);
 
   const hasChords = track.chordProgressions.length > 0;
   const hasGrooves = track.groovePatterns.length > 0;
@@ -202,40 +194,6 @@ export function ChordGrooveSection({ track, album }: Props) {
     });
   }
 
-  async function handleGenerate() {
-    if (!apiKey) {
-      setGenerateError("Settings에서 Anthropic API 키를 입력해주세요.");
-      return;
-    }
-    setIsGenerating(true);
-    setGenerateError(null);
-    try {
-      const { instruction, outputSchema } = buildPrompt("generate_chord_progression", track, album);
-      const result = await callClaude(apiKey, [{ role: "user", content: `${instruction}\n\n${outputSchema}` }]);
-      if (result.parseStatus === "failed") {
-        setGenerateError("응답 파싱 실패. 다시 시도해주세요.");
-        return;
-      }
-      const data = result.parsedJson as { progressions: Array<{ name: string; chords: string[]; key: string; mode: "major" | "minor"; bpm: number | null; }> };
-      const newProgressions: ChordProgression[] = (data.progressions ?? []).map((p) => ({
-        id: crypto.randomUUID(),
-        name: p.name,
-        chords: p.chords,
-        key: p.key,
-        mode: p.mode,
-        bpm: p.bpm ?? undefined,
-        isDefault: false,
-      }));
-      await updateTrack(track.id, {
-        chordProgressions: [...track.chordProgressions, ...newProgressions],
-      });
-    } catch {
-      setGenerateError("API 호출 실패. API 키와 네트워크를 확인해주세요.");
-    } finally {
-      setIsGenerating(false);
-    }
-  }
-
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-3">
@@ -248,19 +206,7 @@ export function ChordGrooveSection({ track, album }: Props) {
               </span>
             )}
           </h2>
-          <button
-            type="button"
-            onClick={handleGenerate}
-            disabled={isGenerating}
-            className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50"
-          >
-            {isGenerating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-            AI 생성
-          </button>
         </div>
-        {generateError && (
-          <p className="text-xs text-destructive">{generateError}</p>
-        )}
         <div className="flex flex-col gap-2">
           {track.chordProgressions.map((cp) => (
             <button

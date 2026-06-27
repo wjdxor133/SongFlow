@@ -4,7 +4,6 @@ import { ArrowLeft } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Textarea } from "../components/ui/textarea";
-import { ReferenceSongSection } from "../components/track/ReferenceSongSection";
 import { SongBriefSection } from "../components/track/SongBriefSection";
 import { ChordGrooveSection } from "../components/track/ChordGrooveSection";
 import { PromptLabSection } from "../components/track/PromptLabSection";
@@ -153,9 +152,6 @@ export function TrackDetail() {
         </div>
       </div>
 
-      {/* References */}
-      <ReferenceSongSection track={track} />
-
       {/* Reference Coach */}
       <ReferenceCoachSection track={track} />
 
@@ -166,7 +162,7 @@ export function TrackDetail() {
       <PromptLabSection track={track} />
 
       {/* Chord & Groove */}
-      {album && <ChordGrooveSection track={track} album={album} />}
+      {album && <ChordGrooveSection track={track} />}
 
       {/* Notes */}
       <NotesSection track={track} />
