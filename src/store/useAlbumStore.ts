@@ -75,6 +75,7 @@ type AlbumStore = {
         | "key"
         | "concept"
         | "lyrics"
+        | "sunoSettings"
         | "selectedChordProgressionId"
         | "selectedGroovePatternId"
         | "soundKeywords"

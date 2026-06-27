@@ -27,6 +27,12 @@ export type Track = {
   key?: string;
   concept?: string;
   lyrics?: string;
+  sunoSettings?: {
+    weirdness: number;
+    styleInfluence: number;
+    audioInfluence: number | null;
+    expectedStyle: string;
+  };
   references: unknown[];
   referenceAnalyses: unknown[];
   chordProgressions: unknown[];

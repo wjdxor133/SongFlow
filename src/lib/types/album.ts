@@ -29,6 +29,13 @@ export type SourceTrack = {
   year?: number;
 };
 
+export type SunoSettings = {
+  weirdness: number; // 0-100 (%)
+  styleInfluence: number; // 0-100 (%)
+  audioInfluence: number | null; // 0-100 (%), null = off (no audio reference)
+  expectedStyle: string; // English one-liner of expected output
+};
+
 export type Track = {
   id: string;
   albumId: string;
@@ -39,6 +46,7 @@ export type Track = {
   concept?: string;
   lyrics?: string;
   sourceTrack?: SourceTrack;
+  sunoSettings?: SunoSettings;
   references: ReferenceSong[];
   referenceAnalyses: ReferenceAnalysis[];
   chordProgressions: ChordProgression[];
