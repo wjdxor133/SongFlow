@@ -32,6 +32,7 @@ export type Track = {
     styleInfluence: number;
     audioInfluence: number | null;
     expectedStyle: string;
+    excludeStyles?: string;
   };
   references: unknown[];
   referenceAnalyses: unknown[];
