@@ -21,3 +21,7 @@ export function getAppDataDir(): string {
 export function getStoreFilePath(): string {
   return path.join(getAppDataDir(), "songflow-data.json");
 }
+
+export function getExportsDir(): string {
+  return path.join(getAppDataDir(), "exports");
+}

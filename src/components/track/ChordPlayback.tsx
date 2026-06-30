@@ -1,7 +1,9 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { Play, Square } from "lucide-react";
+import { Play, Square, Download } from "lucide-react";
 import * as Tone from "tone";
 import type { ChordProgression } from "../../lib/types/music";
+import { buildChordMidi, sanitizeFilename } from "../../lib/midi/chordMidi";
+import { saveMidi } from "../../lib/midi/saveMidi";
 
 const CHORD_COLORS: Record<string, string> = {
   C: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300",
@@ -71,6 +73,7 @@ interface ChordPlaybackProps {
 export function ChordPlayback({ cp, isSelected }: ChordPlaybackProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [playingIndex, setPlayingIndex] = useState<number | null>(null);
+  const [downloadState, setDownloadState] = useState<"idle" | "saving" | "done" | "error">("idle");
   const synthRef = useRef<Tone.PolySynth | null>(null);
   const seqRef = useRef<Tone.Sequence | null>(null);
 
@@ -134,6 +137,26 @@ export function ChordPlayback({ cp, isSelected }: ChordPlaybackProps) {
     Tone.getTransport().start();
   }
 
+  async function downloadMidi() {
+    setDownloadState("saving");
+    try {
+      const bytes = buildChordMidi(cp.chords, {
+        key: cp.key ?? "C",
+        bpm: cp.bpm ?? 100,
+        repeat: 2,
+      });
+      const filename =
+        sanitizeFilename(`${cp.name}_${cp.chords.join("-")}_${cp.bpm ?? 100}bpm`) + ".mid";
+      await saveMidi(bytes, filename);
+      setDownloadState("done");
+      setTimeout(() => setDownloadState("idle"), 2000);
+    } catch (err) {
+      console.error("MIDI 저장 실패", err);
+      setDownloadState("error");
+      setTimeout(() => setDownloadState("idle"), 2500);
+    }
+  }
+
   return (
     <div
       className={[
@@ -165,6 +188,31 @@ export function ChordPlayback({ cp, isSelected }: ChordPlaybackProps) {
             title={isPlaying ? "정지" : "재생"}
           >
             {isPlaying ? <Square className="h-3 w-3 fill-current" /> : <Play className="h-3 w-3 fill-current" />}
+          </button>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              downloadMidi();
+            }}
+            disabled={downloadState === "saving"}
+            className={[
+              "flex h-6 w-6 items-center justify-center rounded-full transition-colors",
+              downloadState === "done"
+                ? "bg-green-500/15 text-green-600 dark:text-green-400"
+                : downloadState === "error"
+                  ? "bg-red-500/15 text-red-600 dark:text-red-400"
+                  : "bg-primary/10 text-primary hover:bg-primary/20",
+            ].join(" ")}
+            title={
+              downloadState === "done"
+                ? "MIDI 저장됨"
+                : downloadState === "error"
+                  ? "저장 실패"
+                  : "MIDI 다운로드 (.mid)"
+            }
+          >
+            <Download className="h-3 w-3" />
           </button>
         </div>
       </div>
