@@ -67,7 +67,7 @@ function trackChunk(events: { delta: number; data: number[] }[]): number[] {
 
 function metaName(text: string): { delta: number; data: number[] } {
   const bytes = [...new TextEncoder().encode(text)];
-  return { delta: 0, data: [0xff, 0x03, bytes.length, ...bytes] };
+  return { delta: 0, data: [0xff, 0x03, ...vlq(bytes.length), ...bytes] };
 }
 
 function noteEvents(bars: number[][], barTicks: number, channel: number, velocity: number) {

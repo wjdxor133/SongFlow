@@ -82,7 +82,7 @@ function noteEvents(bars: number[][], barTicks: number, channel: number, velocit
 
 function metaName(text: string): Event {
   const bytes = [...Buffer.from(text, "utf8")];
-  return { delta: 0, data: [0xff, 0x03, bytes.length, ...bytes] };
+  return { delta: 0, data: [0xff, 0x03, ...vlq(bytes.length), ...bytes] };
 }
 
 export type MidiOptions = {

@@ -14,7 +14,7 @@ chords-to-midi.py — 코드 진행을 DAW에 바로 끌어다 쓸 수 있는 .m
   python3 chords-to-midi.py --bpm 100 --bars-per-chord 1 --repeat 2 \
       --out song.mid Cmaj7 Em7 Am7 Fmaj7
 """
-import argparse, struct, sys, re
+import argparse, struct, re
 
 PC = {"C":0,"D":2,"E":4,"F":5,"G":7,"A":9,"B":11}
 TPQ = 480  # ticks per quarter note
@@ -53,8 +53,7 @@ def parse_chord(sym):
     qual = sym[i:]
     if qual not in QUALITIES:
         raise ValueError(f"코드 품질 인식 실패: '{qual}' (코드 {sym})")
-    chord = [(root_pc + iv) % 12 + (root_pc + iv) // 12 * 12 for iv in QUALITIES[qual]]
-    # keep intervals stacked above root, not folded
+    # intervals stacked above root, not folded into one octave
     chord = [root_pc + iv for iv in QUALITIES[qual]]
     bass = bass_override if bass_override is not None else root_pc
     return bass, root_pc, chord
