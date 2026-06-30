@@ -6,7 +6,11 @@ import {
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
+import fs from "node:fs";
+import path from "node:path";
 import { loadData, withCAS, type Album, type Track, type StorageData } from "./store.js";
+import { getExportsDir } from "./paths.js";
+import { buildChordMidi, sanitizeFilename } from "./midi.js";
 
 function randomId(): string {
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
@@ -330,6 +334,23 @@ const TOOLS = [
         expectedStyle: { type: "string", description: "English one-liner describing expected output" },
       },
       required: ["trackId", "weirdness", "styleInfluence", "expectedStyle"],
+    },
+  },
+  {
+    name: "export_chord_midi",
+    description:
+      "Export a track's chord progression to a Standard MIDI File (.mid) ready to drag into a DAW. Generates two tracks (Bass = root note in octave 2, Chords = stacked voicing in octave 3). Returns the absolute file path plus the MIDI note number of every chord. Use voicing='7th' for a dreamier sound (auto-extends plain triads to maj7/m7).",
+    inputSchema: {
+      type: "object",
+      properties: {
+        trackId: { type: "string" },
+        progressionId: { type: "string", description: "Chord progression id; omit to use the track's selected/default progression" },
+        voicing: { type: "string", enum: ["triad", "7th"], description: "triad (default) or 7th" },
+        repeat: { type: "number", description: "How many times to loop the progression (default 2)" },
+        barsPerChord: { type: "number", description: "Bars each chord is held in 4/4 (default 1)" },
+        outDir: { type: "string", description: "Output directory; omit to use the app exports folder" },
+      },
+      required: ["trackId"],
     },
   },
 ] as const;
@@ -764,6 +785,62 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           }),
         }));
         return { content: [{ type: "text", text: JSON.stringify({ success: true, missionId: a.missionId }, null, 2) }] };
+      }
+
+      case "export_chord_midi": {
+        const data = loadData();
+        const track = data.tracks.find((t) => t.id === a.trackId);
+        if (!track) return { content: [{ type: "text", text: `Track ${a.trackId} not found` }], isError: true };
+
+        const progs = (track.chordProgressions ?? []) as Array<Record<string, unknown>>;
+        if (progs.length === 0) {
+          return { content: [{ type: "text", text: `Track "${track.title}" has no chord progressions` }], isError: true };
+        }
+        const prog =
+          (a.progressionId ? progs.find((p) => p.id === a.progressionId) : undefined) ??
+          (track.selectedChordProgressionId ? progs.find((p) => p.id === track.selectedChordProgressionId) : undefined) ??
+          progs[0];
+        if (!prog) {
+          return { content: [{ type: "text", text: `Progression ${a.progressionId} not found on track` }], isError: true };
+        }
+
+        const chords = Array.isArray(prog.chords) ? (prog.chords as unknown[]).map(String) : [];
+        if (chords.length === 0) {
+          return { content: [{ type: "text", text: `Progression "${String(prog.name)}" has no chords` }], isError: true };
+        }
+        const bpm = Number(prog.bpm ?? track.bpm ?? 104);
+        const seventh = String(a.voicing ?? "triad") === "7th";
+        const repeat = a.repeat !== undefined ? Math.max(1, Number(a.repeat)) : 2;
+        const barsPerChord = a.barsPerChord !== undefined ? Math.max(1, Number(a.barsPerChord)) : 1;
+
+        let result;
+        try {
+          result = buildChordMidi(chords, { key: String(prog.key ?? "C"), bpm, repeat, barsPerChord, seventh });
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          return { content: [{ type: "text", text: `MIDI 생성 실패: ${msg}` }], isError: true };
+        }
+
+        const dir = a.outDir ? String(a.outDir) : getExportsDir();
+        fs.mkdirSync(dir, { recursive: true });
+        const fname =
+          sanitizeFilename(`${track.title}_${chords.join("-")}${seventh ? "_7th" : ""}_${Math.round(bpm)}bpm`) + ".mid";
+        const outPath = path.join(dir, fname);
+        fs.writeFileSync(outPath, result.buffer);
+
+        return {
+          content: [{
+            type: "text",
+            text: JSON.stringify({
+              file: outPath,
+              progression: { id: prog.id, name: prog.name, chords, key: prog.key, bpm },
+              voicing: seventh ? "7th" : "triad",
+              bars: chords.length * repeat * barsPerChord,
+              middleC: "C4 = MIDI 60",
+              notes: result.perChord,
+            }, null, 2),
+          }],
+        };
       }
 
       default:

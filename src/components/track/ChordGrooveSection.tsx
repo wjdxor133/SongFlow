@@ -209,16 +209,26 @@ export function ChordGrooveSection({ track }: Props) {
         </div>
         <div className="flex flex-col gap-2">
           {track.chordProgressions.map((cp) => (
-            <button
+            // 주의: 카드 안에 ChordPlayback의 재생 <button>이 들어가므로
+            // 이 래퍼는 <button>이면 안 됨(button 중첩 → WKWebView에서 재생 클릭이 삼켜짐).
+            <div
               key={cp.id}
-              className="text-left"
+              role="button"
+              tabIndex={0}
+              className="cursor-pointer text-left"
               onClick={() => selectChord(cp.id)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  selectChord(cp.id);
+                }
+              }}
             >
               <ChordPlayback
                 cp={cp}
                 isSelected={track.selectedChordProgressionId === cp.id}
               />
-            </button>
+            </div>
           ))}
           <AddChordProgressionForm onAdd={handleAddChordProgression} />
         </div>
