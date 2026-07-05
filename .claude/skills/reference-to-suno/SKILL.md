@@ -14,7 +14,9 @@ description: 레퍼런스 곡 하나로 Suno에 바로 쓸 트랙을 만든다. 
 - `WebSearch`로 곡 확정(동명이곡이면 후보 한 번 확인), `WebSearch`+`WebFetch`로 Key/BPM 조회(tunebat 등, 커뮤니티 추정치 → Claude 지식과 교차검토), 장르/무드/프로덕션 느낌 정리.
 - **C키 변환**: 장조→C major / 단조→C minor (변환 반음 수 명시, 이미 C면 0). **BPM은 유지.**
 
-**Q2 "원곡 가사를 붙여넣어 주세요."** (가사 전문은 웹 자동추출이 막혀 직접 받는다)
+**Q2 "원곡 가사"** — 붙여넣기 요청 전에 먼저 **자동 추출을 시도**한다:
+- **가사 자동 추출**: `insane-search` 스킬로 가사 사이트를 뚫는다. WAF/CAPTCHA(letras·genius·bugs·melon 등)가 흔하지만 **Jina Reader**(`curl -s "https://r.jina.ai/<가사URL>"`)나 engine(`python3 -m engine <URL>`)으로 종종 관통된다. genius가 막히면 letras.com/namu.wiki/벅스 등 다른 소스로 폴백. 여러 소스 병렬 시도.
+- 추출 성공 시 사용자에게 섹션 구조로 정리해 **확인만** 받는다(재붙여넣기 불필요). 전 소스 실패 시에만 "원곡 가사를 붙여넣어 주세요"로 수동 요청.
 - 섹션 라벨이 있으면 사용, 없으면 송폼으로 나눈다. **줄별 음절 수**를 센다(한국어=글자 수, 영어=발음 음절).
 
 **Q3 "어떤 컨셉·언어로?"** (예: "강렬한 첫만남, 영어")
@@ -22,8 +24,11 @@ description: 레퍼런스 곡 하나로 Suno에 바로 쓸 트랙을 만든다. 
 ## 생성 & 기록
 
 **1. 음절 일치 가사** — Q2의 줄별 음절 수를 정확히 맞춰 Q3 컨셉/언어로 작성. 섹션 구조·후렴 위치 보존, 상징적 훅(예: "Oh my my")은 살려도 됨. **생성 후 줄별 음절 수 재검산.**
+   - **멜로디를 위한 여백**: 가사를 빽빽하게 채우지 말고 후렴·훅에 열린 모음 라인("oh/ah/na na")과 짧은 반복을 둬 멜로디가 숨쉴 공간을 준다(Suno 탑라인이 선명해짐).
+   - **멜로디 곡선 메타태그**(다이내믹이 바뀌는 섹션 태그에 선택적으로 부착): `[Ascending progression]`·`[Build-up dynamics]`(빌드업), `[Descending melody]`(릴리스), `[Bridge modulation]`·`[Half-step change]`·`[Key shift cue]`(브릿지 전조로 후반 리프레시), `[Vocal expansion]`(음역 확장), `[Varied repetition]`·`[Motif transformation]`(훅 변형으로 지루함 방지). 브래킷은 가창되지 않는 구조/메타 큐다.
 
-**2. Suno style 텍스트** — **영어로만, 깨끗하게**(바로 복붙용). 장르/무드/프로덕션 + BPM + C키 + 보컬 스타일 한 문단. 보컬 선명도 위해 "clear lead vocal, vocal-forward mix, uncluttered verses" 류 포함. ⚠️ **설정값·한국어를 style에 섞지 않는다** (설정은 아래 4번 `save_suno_settings`로 따로 기록).
+**2. Suno style 텍스트** — **영어로만, 깨끗하게**(바로 복붙용). 장르/무드/프로덕션 + BPM + C키 + 보컬 스타일 한 문단. 보컬 선명도 위해 "clear lead vocal, vocal-forward mix, uncluttered verses" 류 포함. **핵심 태그 5~8개 유지**(4개 미만은 밋밋, 10개 초과는 뒤쪽 태그가 무시됨). ⚠️ **설정값·한국어를 style에 섞지 않는다** (설정은 아래 4번 `save_suno_settings`로 따로 기록).
+   - **보컬 성별**은 style 문장에 산문으로(예: `clear female lead vocal`), 캐릭터 큐는 가사의 `[Vocals: …]` 태그로 지정한다. Suno UI의 Male/Female 버튼은 쓰지 않는다(버튼은 보컬 처리에 하드락을 걸어 멜로디 표현력·자연스러움을 떨어뜨린다).
 
 **3. MCP 기록 (순서대로)**
 1. `list_albums` → 적절한 앨범 없으면 `create_album { title, genre, concept }`

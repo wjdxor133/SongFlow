@@ -136,6 +136,10 @@ args에서 다음을 추출한다:
 유다연 스타일 → afrobeats groove, breathy Korean female vocal, dance pop hook, bright clean mix
 ```
 
+**핵심 스타일 태그 5~8개 유지** (위 악기 3~5개를 포함한 전체 스타일 디스크립터 수 — 4개 미만은 밋밋, 10개 초과는 뒤쪽 태그가 무시됨). 우선순위: 장르 → 무드 → 리드 악기 → 보컬 스타일 → BPM.
+
+**보컬 성별 지정** — Style 필드에는 평범한 산문으로(예: `clear female lead vocal`), 캐릭터 큐는 가사 필드의 `[Vocals: …]` 태그로. Suno UI의 Male/Female 버튼은 쓰지 않는다(버튼은 보컬 처리에 하드락을 걸어 멜로디 표현력·자연스러움을 떨어뜨린다).
+
 **예시 Style 프롬프트:**
 ```
 modern afrobeats dance pop, warm and upbeat, 104 BPM, Eb major,
@@ -162,6 +166,14 @@ summer romance first love
 ```
 
 훅이 약할 경우 `[Hook: lead instrument plays a memorable 2-bar motif]` 태그 삽입.
+
+**멜로디 곡선 메타태그** — 다이내믹이 바뀌는 섹션에 선택적으로 부착해 멜로디 움직임을 유도한다:
+- 빌드업: `[Ascending progression]`, `[Build-up dynamics]`
+- 릴리스/차분: `[Descending melody]`
+- 후반 리프레시(브릿지 전조): `[Bridge modulation]`, `[Key shift cue]`, `[Half-step change]`
+- 정점/임팩트: `[Vocal expansion]`, `[Emotional climax]`
+- 지루함 방지(훅 변형): `[Varied repetition]`, `[Motif transformation]`
+- 반복 Chorus 태그·가사는 동일하게 유지 → 멜로디 반복(귀에 박힘)을 유도.
 
 ---
 

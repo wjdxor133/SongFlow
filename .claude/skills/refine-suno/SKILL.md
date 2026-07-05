@@ -28,6 +28,8 @@ description: Suno로 곡을 뽑아 들어본 뒤 "어디가 별로였는지"를 
 | 장르·무드가 딴판 | style의 장르/프로덕션 키워드 교체, 필요시 `styleInfluence` ↑ |
 | 섹션 다이내믹 약함(빌드업·대비) | style에 섹션별 지시(VERSE 인티메이트 / PRE-CHORUS build-up / CHORUS big anthemic) + 가사 섹션 태그에 연출 큐 `(build up)`, `(big, full energy)` 추가 |
 | 후렴 약함 | style에 "big anthemic chorus, stacked vocal harmonies, wide, hook hitting hard" + `[Chorus] (big, anthemic, full energy)` |
+| 멜로디가 밋밋·변화 없음·안 늘어남 | 다이내믹 지점의 섹션 태그에 멜로디 곡선 큐 부착: 빌드업 `[Build-up dynamics]`/`[Ascending progression]`, 정점 `[Vocal expansion]`, 후반 리프레시 `[Bridge modulation]`/`[Key shift cue]`/`[Half-step change]`, 훅 변형 `[Varied repetition]`/`[Motif transformation]`. 후렴 반복 태그·가사는 동일 유지(멜로디 반복 유도) |
+| 보컬 성별/캐릭터 어긋남 | style에 산문으로(`clear female lead vocal`) + 가사 `[Vocals: …]` 태그로 지정. Suno UI Male/Female 버튼은 쓰지 않도록 안내(하드락→멜로디 표현력 저하) |
 | 특정 악기 보컬과 안 맞음 | style에 "vocal locks to the <악기> rhythm" 식으로 명시 |
 | 멜로디·플로우 어색 | 가사 음절/섹션 미세 조정 — **단, 원곡 음절 일치를 유지**(줄별 음절 수 재검산) |
 | 코드 느낌 안 맞음 | `save_chord_progressions`로 진행 교체/추가 |
