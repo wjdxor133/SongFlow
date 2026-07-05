@@ -332,6 +332,7 @@ const TOOLS = [
         styleInfluence: { type: "number", description: "0-100 (%)" },
         audioInfluence: { type: "number", description: "0-100 (%); omit for off (no audio reference)" },
         expectedStyle: { type: "string", description: "English one-liner describing expected output" },
+        excludeStyles: { type: "string", description: "Suno Exclude Styles — comma-separated things to avoid (e.g. 'ad-libs, background vocals, male vocals')" },
       },
       required: ["trackId", "weirdness", "styleInfluence", "expectedStyle"],
     },
@@ -648,6 +649,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           styleInfluence: Number(a.styleInfluence),
           audioInfluence: a.audioInfluence !== undefined ? Number(a.audioInfluence) : null,
           expectedStyle: String(a.expectedStyle),
+          ...(a.excludeStyles !== undefined ? { excludeStyles: String(a.excludeStyles) } : {}),
         };
         withCAS((data) => ({
           ...data,
