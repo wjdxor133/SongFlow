@@ -32,3 +32,6 @@ dist-ssr
 *.pdf
 SongFlow-Project-Brief.*
 songflow-project-brief.*
+
+# Generated MIDI exports
+exports/

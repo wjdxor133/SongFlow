@@ -38,7 +38,18 @@ description: 레퍼런스 곡 하나로 Suno에 바로 쓸 트랙을 만든다. 
 5. `save_suno_settings { trackId, weirdness, styleInfluence, audioInfluence?, expectedStyle }` (영어 expected 한 줄)
 6. `save_chord_progressions { trackId, progressions:[{name, chords, key, mode, bpm}, …] }` — 작업 키에 맞는 진행 5개
 
-**7. 마무리** — 앨범/트랙명·`trackId`, 음절 스폿체크, Suno 설정 안내. Key/BPM 추정치임 명시.
+**7. DAW 표기 + MIDI (코드 진행마다 항상 포함)** — 코드 심볼만으로는 DAW에 못 찍으니, **선택/기본 진행**에 대해 근음·보이싱·MIDI 번호를 표로 보여준다(옥타브 기준: 미들 C = C4 / MIDI 60 명시). 그다음 `.mid` 파일을 뽑는다:
+```
+mkdir -p exports
+python3 .claude/skills/reference-to-suno/chords-to-midi.py \
+  --key <작업키> --bpm <bpm> --repeat 2 \
+  --out exports/<트랙명>_<진행>_<bpm>bpm.mid <코드…>
+```
+- 스크립트가 Bass 트랙(근음, 옥타브 2) + Chords 트랙(쌓기, 옥타브 3) 2트랙 .mid를 만들고, 코드별 MIDI 노트를 출력한다. triad/7th/sus/dim/슬래시 코드 지원.
+- 드리미·R&B 계열이면 7th 변형도 한 벌 더 뽑아 제시.
+- 결과 파일 경로를 사용자에게 안내(DAW에 드래그). 음성 진행(voice leading) 팁은 표 아래 한두 줄로.
+
+**8. 마무리** — 앨범/트랙명·`trackId`, 음절 스폿체크, Suno 설정값, **DAW 표기 표 + .mid 경로**를 안내. Key/BPM은 추정치임을 한 줄로 명시.
 
 ## 보컬·생성 원칙 (실전 학습 — style/설정에 반영)
 - **자연스러움 > 파워**: 억지 belting은 **AI 티**가 난다. 에너지는 **리듬·그루브·아티큘레이션**(펀치·바운시·싱코페이션)에서, 볼륨에서가 아니라.
@@ -52,4 +63,6 @@ description: 레퍼런스 곡 하나로 Suno에 바로 쓸 트랙을 만든다. 
 ## 원칙
 - 질의문답 한 번에 하나씩. 키(Q2)부터 확인.
 - 음절 일치 핵심 — 재검산. 멜로디는 가사 컨투어로.
-- 산출물은 MCP로만 기록. 화성학/이론 학습은 범위 밖(별도 스킬).
+- 코드 진행은 **항상 DAW 표기(근음·보이싱·MIDI 번호) + .mid 출력**까지 함께 제공.
+- 산출물은 MCP로만 기록(데이터 파일 직접 편집 금지). 단 `.mid`는 `exports/`에 파일로 출력(데이터 파일 아님).
+- 화성학/이론 학습은 범위 밖(별도 스킬).
