@@ -46,8 +46,9 @@ description: 레퍼런스 곡 하나로 Suno에 바로 쓸 트랙을 만든다. 
 4. `save_agent_response { trackId, task:"generate_suno_prompts", rawText:"{\"style\":\"...\",\"lyrics\":\"...\"}" }` — 트랙당 프롬프트 1개 유지(서버가 교체)
 5. `save_suno_settings { trackId, weirdness, styleInfluence, audioInfluence?, excludeStyles? }` (excludeStyles = Suno Exclude Styles에 넣을 쉼표구분 회피 목록, 예: "ad-libs, breaths, runs, male vocals")
 6. `save_chord_progressions { trackId, progressions:[{name, chords, key, mode, bpm}, …] }` — 작업 키에 맞는 진행 5개
+7. `save_sound_keywords { trackId, drums, bass, melody, harmony, fx, vocal }` — 파트별 **샘플 검색 키워드**(Splice 등). 레퍼런스 프로덕션 특성에서 도출한 실제 검색어를 파트별 3~6개씩, 작업 키·BPM을 녹여 정확도를 높인다. 예: `drums:["pop rock drums 112","punchy live drums"]`, `harmony:["funk guitar loop Am","clean electric guitar"]`, `fx:["riser","vinyl foley"]`. 해당 없는 파트는 빈 배열.
 
-**7. DAW 표기 + MIDI (코드 진행마다 항상 포함)** — 코드 심볼만으로는 DAW에 못 찍으니, **선택/기본 진행**에 대해 근음·보이싱·MIDI 번호를 표로 보여준다(옥타브 기준: 미들 C = C4 / MIDI 60 명시). 그다음 `.mid` 파일을 뽑는다:
+**8. DAW 표기 + MIDI (코드 진행마다 항상 포함)** — 코드 심볼만으로는 DAW에 못 찍으니, **선택/기본 진행**에 대해 근음·보이싱·MIDI 번호를 표로 보여준다(옥타브 기준: 미들 C = C4 / MIDI 60 명시). 그다음 `.mid` 파일을 뽑는다:
 ```
 mkdir -p exports
 python3 .claude/skills/reference-to-suno/chords-to-midi.py \
@@ -58,7 +59,7 @@ python3 .claude/skills/reference-to-suno/chords-to-midi.py \
 - 드리미·R&B 계열이면 7th 변형도 한 벌 더 뽑아 제시.
 - 결과 파일 경로를 사용자에게 안내(DAW에 드래그). 음성 진행(voice leading) 팁은 표 아래 한두 줄로.
 
-**8. 마무리** — 앨범/트랙명·`trackId`, 음절 스폿체크, Suno 설정값, **DAW 표기 표 + .mid 경로**를 안내. Key/BPM은 추정치임을 한 줄로 명시.
+**9. 마무리** — 앨범/트랙명·`trackId`, 음절 스폿체크, Suno 설정값, 샘플 검색 키워드, **DAW 표기 표 + .mid 경로**를 안내. Key/BPM은 추정치임을 한 줄로 명시.
 
 ## 보컬·생성 원칙 (실전 학습 — style/설정에 반영)
 - **자연스러움 > 파워**: 억지 belting은 **AI 티**가 난다. 에너지는 **리듬·그루브·아티큘레이션**(펀치·바운시·싱코페이션)에서, 볼륨에서가 아니라.

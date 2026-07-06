@@ -337,6 +337,24 @@ const TOOLS = [
     },
   },
   {
+    name: "save_sound_keywords",
+    description:
+      "Save part-by-part sample search keywords (e.g. for Splice) to a track. Each field is a list of search terms for that part. Shown as a 'Sample Search Keywords' card so the producer can copy them into a sample marketplace.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        trackId: { type: "string" },
+        drums: { type: "array", items: { type: "string" }, description: "Drum/percussion search terms" },
+        bass: { type: "array", items: { type: "string" }, description: "Bass search terms" },
+        melody: { type: "array", items: { type: "string" }, description: "Melodic/lead search terms" },
+        harmony: { type: "array", items: { type: "string" }, description: "Chords/pads/keys/guitar search terms" },
+        fx: { type: "array", items: { type: "string" }, description: "FX/riser/foley search terms" },
+        vocal: { type: "array", items: { type: "string" }, description: "Vocal chop/adlib search terms" },
+      },
+      required: ["trackId"],
+    },
+  },
+  {
     name: "export_chord_midi",
     description:
       "Export a track's chord progression to a Standard MIDI File (.mid) ready to drag into a DAW. Generates two tracks (Bass = root note in octave 2, Chords = stacked voicing in octave 3). Returns the absolute file path plus the MIDI note number of every chord. Use voicing='7th' for a dreamier sound (auto-extends plain triads to maj7/m7).",
@@ -656,6 +674,29 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           ),
         }));
         return { content: [{ type: "text", text: JSON.stringify(settings, null, 2) }] };
+      }
+
+      case "save_sound_keywords": {
+        const t = now();
+        if (!loadData().tracks.find((tr) => tr.id === a.trackId)) {
+          return { content: [{ type: "text", text: `Track ${a.trackId} not found` }], isError: true };
+        }
+        const toStrArr = (v: unknown): string[] => (Array.isArray(v) ? v.map(String) : []);
+        const soundKeywords = {
+          drums: toStrArr(a.drums),
+          bass: toStrArr(a.bass),
+          melody: toStrArr(a.melody),
+          harmony: toStrArr(a.harmony),
+          fx: toStrArr(a.fx),
+          vocal: toStrArr(a.vocal),
+        };
+        withCAS((data) => ({
+          ...data,
+          tracks: data.tracks.map((track) =>
+            track.id === a.trackId ? { ...track, soundKeywords, updatedAt: t } : track
+          ),
+        }));
+        return { content: [{ type: "text", text: JSON.stringify(soundKeywords, null, 2) }] };
       }
 
       case "save_track_plan": {

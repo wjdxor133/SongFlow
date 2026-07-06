@@ -1,10 +1,11 @@
 import { useAlbumStore } from "../../store/useAlbumStore";
 import type { Track } from "../../lib/types/album";
-import type { ChordProgression, GroovePattern } from "../../lib/types/music";
+import type { ChordProgression, GroovePattern, SoundKeywordGroup } from "../../lib/types/music";
 import { useState } from "react";
 import { Plus } from "lucide-react";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
+import { CopyButton } from "../ui/CopyButton";
 import {
   Dialog,
   DialogContent,
@@ -165,6 +166,49 @@ function AddChordProgressionForm({ onAdd }: { onAdd: (cp: Omit<ChordProgression,
   );
 }
 
+const SOUND_KEYWORD_PARTS: { key: keyof SoundKeywordGroup; label: string }[] = [
+  { key: "drums", label: "Drums" },
+  { key: "bass", label: "Bass" },
+  { key: "melody", label: "Melody" },
+  { key: "harmony", label: "Harmony" },
+  { key: "fx", label: "FX" },
+  { key: "vocal", label: "Vocal" },
+];
+
+function SoundKeywordsCard({ kw }: { kw: SoundKeywordGroup }) {
+  const parts = SOUND_KEYWORD_PARTS.filter((p) => (kw[p.key]?.length ?? 0) > 0);
+  if (parts.length === 0) return null;
+  const all = parts.flatMap((p) => kw[p.key]).join(", ");
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-semibold">샘플 검색 키워드</h2>
+        <CopyButton text={all} />
+      </div>
+      <div className="rounded-lg border bg-muted/20 p-3 flex flex-col gap-2.5">
+        {parts.map((p) => (
+          <div key={p.key} className="flex flex-col gap-1">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] uppercase tracking-wide text-muted-foreground">{p.label}</span>
+              <CopyButton text={kw[p.key].join(", ")} />
+            </div>
+            <div className="flex flex-wrap gap-1">
+              {kw[p.key].map((term, i) => (
+                <span
+                  key={i}
+                  className="inline-flex items-center rounded-md border bg-background px-2 py-0.5 text-xs"
+                >
+                  {term}
+                </span>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 interface Props {
   track: Track;
 }
@@ -259,6 +303,8 @@ export function ChordGrooveSection({ track }: Props) {
           </div>
         </div>
       )}
+
+      {track.soundKeywords && <SoundKeywordsCard kw={track.soundKeywords} />}
     </div>
   );
 }
