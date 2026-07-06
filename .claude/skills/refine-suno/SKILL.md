@@ -38,7 +38,7 @@ description: Suno로 곡을 뽑아 들어본 뒤 "어디가 별로였는지"를 
 
 ### Step 3 — 갱신 (MCP)
 - **프롬프트 교체**: `save_agent_response { trackId, task:"generate_suno_prompts", rawText:"{\"style\":\"<개선 style>\",\"lyrics\":\"<유지/조정 가사>\"}" }` — 서버가 기존 프롬프트를 교체해 1개만 유지.
-- **설정 갱신**: `save_suno_settings { trackId, weirdness, styleInfluence, audioInfluence?, expectedStyle }` (영어 expected).
+- **설정 갱신**: `save_suno_settings { trackId, weirdness, styleInfluence, audioInfluence?, excludeStyles? }` (excludeStyles = Suno Exclude Styles에 넣을 쉼표구분 회피 목록).
 - **코드 변경 시**: `save_chord_progressions { trackId, progressions:[…] }`.
 - (선택) 들어본 버전 기록: `save_suno_result { trackId, url, rating, memo }` (memo에 약했던 점).
 

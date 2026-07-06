@@ -33,7 +33,6 @@ export type SunoSettings = {
   weirdness: number; // 0-100 (%)
   styleInfluence: number; // 0-100 (%)
   audioInfluence: number | null; // 0-100 (%), null = off (no audio reference)
-  expectedStyle: string; // English one-liner of expected output
   excludeStyles?: string; // Suno "Exclude Styles" — comma-separated things to avoid (e.g. "ad-libs, male vocals")
 };
 
