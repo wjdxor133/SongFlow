@@ -323,7 +323,7 @@ const TOOLS = [
   },
   {
     name: "save_suno_settings",
-    description: "Save recommended Suno generation settings to a track (Weirdness / Style Influence / Audio Influence / expected style). Shown as a separate card in PromptLab.",
+    description: "Save recommended Suno generation settings to a track (Weirdness / Style Influence / Audio Influence / Exclude Styles). Shown as a separate card in PromptLab.",
     inputSchema: {
       type: "object",
       properties: {
@@ -331,10 +331,9 @@ const TOOLS = [
         weirdness: { type: "number", description: "0-100 (%)" },
         styleInfluence: { type: "number", description: "0-100 (%)" },
         audioInfluence: { type: "number", description: "0-100 (%); omit for off (no audio reference)" },
-        expectedStyle: { type: "string", description: "English one-liner describing expected output" },
         excludeStyles: { type: "string", description: "Suno Exclude Styles — comma-separated things to avoid (e.g. 'ad-libs, background vocals, male vocals')" },
       },
-      required: ["trackId", "weirdness", "styleInfluence", "expectedStyle"],
+      required: ["trackId", "weirdness", "styleInfluence"],
     },
   },
   {
@@ -648,7 +647,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           weirdness: Number(a.weirdness),
           styleInfluence: Number(a.styleInfluence),
           audioInfluence: a.audioInfluence !== undefined ? Number(a.audioInfluence) : null,
-          expectedStyle: String(a.expectedStyle),
           ...(a.excludeStyles !== undefined ? { excludeStyles: String(a.excludeStyles) } : {}),
         };
         withCAS((data) => ({

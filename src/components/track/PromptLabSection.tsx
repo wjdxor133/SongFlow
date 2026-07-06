@@ -187,17 +187,6 @@ function SunoSettingsCard({ settings }: { settings: NonNullable<Track["sunoSetti
           </p>
         </div>
       )}
-      {settings.expectedStyle && (
-        <div className="flex flex-col gap-1">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Expected</span>
-            <CopyButton text={settings.expectedStyle} />
-          </div>
-          <p className="text-sm bg-background rounded p-2 border leading-relaxed">
-            {settings.expectedStyle}
-          </p>
-        </div>
-      )}
     </div>
   );
 }

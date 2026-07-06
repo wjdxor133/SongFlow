@@ -31,7 +31,6 @@ export type Track = {
     weirdness: number;
     styleInfluence: number;
     audioInfluence: number | null;
-    expectedStyle: string;
     excludeStyles?: string;
   };
   references: unknown[];

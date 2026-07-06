@@ -9,6 +9,11 @@ description: 레퍼런스 곡 하나로 Suno에 바로 쓸 트랙을 만든다. 
 
 ## 질의문답 (한 번에 하나씩)
 
+> **⚠️ 항상 실행 (필수)**: 이 스킬이 호출되면 **매번 Q1→Q2→Q3→Q4를 한 번에 하나씩** 진행한다. 이미 같은 트랙의 작업분(브리프·코드·이전 프롬프트 등)이 있어도 **질문을 건너뛰거나 답을 임의 추론하지 않는다.**
+> - 각 질문은 사용자의 답을 받은 뒤에만 다음으로 넘어간다(웹 자동 처리·가사 자동 추출은 백그라운드로 병행 가능하나, 사용자에게 던지는 질문은 순차·단건).
+> - 이미 아는 정보가 있으면 그 값을 **기본 제안으로 제시**하되, "이대로 갈까요?"로 **반드시 확인받는다**(무단 확정 금지).
+> - 사용자가 "빠르게/알아서" 등으로 스킵을 명시적으로 요청할 때만 압축한다.
+
 **Q1 "어떤 노래인가요?"** ("아티스트 - 제목", 링크 가능)
 답을 받으면 되묻지 않고 웹으로 자동 처리: `WebSearch`로 곡 확정(동명이곡이면 후보 한 번 확인), `WebSearch`+`WebFetch`로 Key/BPM 조회(tunebat 등, 커뮤니티 추정치 → Claude 지식과 교차검토), 장르/무드/프로덕션 느낌 정리.
 
@@ -39,7 +44,7 @@ description: 레퍼런스 곡 하나로 Suno에 바로 쓸 트랙을 만든다. 
 2. `create_track { albumId, title, genre, bpm, key, concept, lyrics }` → `trackId` (`concept` 필수)
 3. `save_reference_brief { trackId, artist, songTitle, summary, genreTags, moodTags, productionTraits, confidence, disclaimer }`
 4. `save_agent_response { trackId, task:"generate_suno_prompts", rawText:"{\"style\":\"...\",\"lyrics\":\"...\"}" }` — 트랙당 프롬프트 1개 유지(서버가 교체)
-5. `save_suno_settings { trackId, weirdness, styleInfluence, audioInfluence?, expectedStyle }` (영어 expected 한 줄)
+5. `save_suno_settings { trackId, weirdness, styleInfluence, audioInfluence?, excludeStyles? }` (excludeStyles = Suno Exclude Styles에 넣을 쉼표구분 회피 목록, 예: "ad-libs, breaths, runs, male vocals")
 6. `save_chord_progressions { trackId, progressions:[{name, chords, key, mode, bpm}, …] }` — 작업 키에 맞는 진행 5개
 
 **7. DAW 표기 + MIDI (코드 진행마다 항상 포함)** — 코드 심볼만으로는 DAW에 못 찍으니, **선택/기본 진행**에 대해 근음·보이싱·MIDI 번호를 표로 보여준다(옥타브 기준: 미들 C = C4 / MIDI 60 명시). 그다음 `.mid` 파일을 뽑는다:
