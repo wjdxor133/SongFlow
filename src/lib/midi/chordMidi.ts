@@ -127,3 +127,30 @@ export function buildChordMidi(chords: string[], opts: ChordMidiOptions = {}): U
 export function sanitizeFilename(s: string): string {
   return s.replace(/[^\w.-]+/g, "_").replace(/_+/g, "_").replace(/^_|_$/g, "").slice(0, 80) || "progression";
 }
+
+const NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+
+/** MIDI 노트 번호 → 음이름 (미들 C = C4 = 60) */
+export function midiToName(n: number): string {
+  return `${NOTE_NAMES[((n % 12) + 12) % 12]}${Math.floor(n / 12) - 1}`;
+}
+
+/**
+ * 코드 심볼 → 다운로드되는 .mid와 동일한 Bass/Chord MIDI 노트 번호.
+ * 옥타브 기본값은 buildChordMidi와 일치(bass 2, chord 3). 인식 실패 시 null.
+ */
+export function chordToMidiNotes(
+  sym: string,
+  opts: { seventh?: boolean; bassOctave?: number; chordOctave?: number } = {}
+): { bass: number; chord: number[] } | null {
+  const { seventh = false, bassOctave = 2, chordOctave = 3 } = opts;
+  try {
+    const pc = parseChord(sym, seventh);
+    return {
+      bass: 12 * (bassOctave + 1) + pc.bassPc,
+      chord: pc.intervals.map((iv) => 12 * (chordOctave + 1) + pc.rootPc + iv),
+    };
+  } catch {
+    return null;
+  }
+}

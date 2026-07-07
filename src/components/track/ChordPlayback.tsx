@@ -1,8 +1,8 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { Play, Square, Download } from "lucide-react";
+import { Play, Square, Download, ListMusic } from "lucide-react";
 import * as Tone from "tone";
 import type { ChordProgression } from "../../lib/types/music";
-import { buildChordMidi, sanitizeFilename } from "../../lib/midi/chordMidi";
+import { buildChordMidi, sanitizeFilename, chordToMidiNotes, midiToName } from "../../lib/midi/chordMidi";
 import { saveMidi } from "../../lib/midi/saveMidi";
 
 const CHORD_COLORS: Record<string, string> = {
@@ -74,6 +74,7 @@ export function ChordPlayback({ cp, isSelected }: ChordPlaybackProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [playingIndex, setPlayingIndex] = useState<number | null>(null);
   const [downloadState, setDownloadState] = useState<"idle" | "saving" | "done" | "error">("idle");
+  const [showNotes, setShowNotes] = useState(false);
   const synthRef = useRef<Tone.PolySynth | null>(null);
   const seqRef = useRef<Tone.Sequence | null>(null);
 
@@ -182,6 +183,20 @@ export function ChordPlayback({ cp, isSelected }: ChordPlaybackProps) {
             type="button"
             onClick={(e) => {
               e.stopPropagation();
+              setShowNotes((v) => !v);
+            }}
+            className={[
+              "flex h-6 w-6 items-center justify-center rounded-full transition-colors",
+              showNotes ? "bg-primary/20 text-primary" : "bg-primary/10 text-primary hover:bg-primary/20",
+            ].join(" ")}
+            title={showNotes ? "MIDI 노트 숨기기" : "MIDI 노트 보기"}
+          >
+            <ListMusic className="h-3 w-3" />
+          </button>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
               isPlaying ? stopPlayback() : playChordProgression();
             }}
             className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
@@ -230,6 +245,41 @@ export function ChordPlayback({ cp, isSelected }: ChordPlaybackProps) {
           </span>
         ))}
       </div>
+
+      {showNotes && (
+        <div className="overflow-x-auto rounded-md border bg-background/60">
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="text-muted-foreground">
+                <th className="px-2 py-1 text-left font-medium">Chord</th>
+                <th className="px-2 py-1 text-left font-medium">Bass</th>
+                <th className="px-2 py-1 text-left font-medium">Notes (MIDI)</th>
+              </tr>
+            </thead>
+            <tbody className="font-mono">
+              {cp.chords.map((chord, i) => {
+                const n = chordToMidiNotes(chord);
+                return (
+                  <tr key={i} className="border-t border-border/60">
+                    <td className="px-2 py-1 font-semibold whitespace-nowrap">{chord}</td>
+                    <td className="px-2 py-1 whitespace-nowrap">
+                      {n ? `${midiToName(n.bass)} (${n.bass})` : "—"}
+                    </td>
+                    <td className="px-2 py-1">
+                      {n
+                        ? n.chord.map((m) => `${midiToName(m)} (${m})`).join("   ")
+                        : "인식 실패"}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          <p className="px-2 py-1 text-[10px] text-muted-foreground border-t border-border/60">
+            미들 C = C4 = 60 · Bass 옥타브 2 / Chord 옥타브 3 (.mid 다운로드와 동일)
+          </p>
+        </div>
+      )}
     </div>
   );
 }
