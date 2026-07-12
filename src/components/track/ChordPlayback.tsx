@@ -61,6 +61,27 @@ function chordColor(chord: string) {
 // since every instance shares the global Tone.getTransport() singleton.
 let activeStop: (() => void) | null = null;
 
+// WKWebView (Tauri on macOS) reports AudioContext.state === "running" but emits
+// no sound until the first *real* playback node fires inside a user gesture —
+// Chrome is lenient, WebKit is not. Playing one short silent buffer "arms" the
+// output route. Runs once per context; harmless in Chrome.
+// Refs: WebKit bug 132691, Tone.js autoplay wiki.
+let audioUnlocked = false;
+function unlockWebAudio() {
+  if (audioUnlocked) return;
+  const raw = Tone.getContext().rawContext as unknown as AudioContext;
+  try {
+    const buffer = raw.createBuffer(1, 1, raw.sampleRate);
+    const source = raw.createBufferSource();
+    source.buffer = buffer;
+    source.connect(raw.destination);
+    source.start(0);
+    audioUnlocked = true;
+  } catch (err) {
+    console.warn("[ChordPlayback] audio unlock failed:", err);
+  }
+}
+
 interface ChordPlaybackProps {
   cp: ChordProgression;
   isSelected: boolean;
@@ -105,37 +126,45 @@ export function ChordPlayback({ cp, isSelected }: ChordPlaybackProps) {
     activeStop?.();
     activeStop = stopPlayback;
 
-    await Tone.start();
+    try {
+      await Tone.start();
+      // WKWebView emits no sound despite a "running" context until an initial
+      // real playback node fires inside the gesture. Unlock before scheduling.
+      unlockWebAudio();
 
-    const synth = new Tone.PolySynth(Tone.Synth, {
-      oscillator: { type: "triangle" },
-      envelope: { attack: 0.05, decay: 0.3, sustain: 0.4, release: 0.8 },
-      volume: -8,
-    }).toDestination();
-    synthRef.current = synth;
+      const synth = new Tone.PolySynth(Tone.Synth, {
+        oscillator: { type: "triangle" },
+        envelope: { attack: 0.05, decay: 0.3, sustain: 0.4, release: 0.8 },
+        volume: -8,
+      }).toDestination();
+      synthRef.current = synth;
 
-    const bpm = cp.bpm ?? 100;
-    Tone.getTransport().bpm.value = bpm;
+      const bpm = cp.bpm ?? 100;
+      Tone.getTransport().bpm.value = bpm;
 
-    let index = 0;
-    const seq = new Tone.Sequence(
-      (time) => {
-        const chord = cp.chords[index];
-        const notes = parseChordToNotes(chord);
-        synth.triggerAttackRelease(notes, "2n", time);
-        setPlayingIndex(index);
-        index = (index + 1) % cp.chords.length;
-      },
-      cp.chords.map((_, i) => i),
-      "1n"
-    );
-    seqRef.current = seq;
+      let index = 0;
+      const seq = new Tone.Sequence(
+        (time) => {
+          const chord = cp.chords[index];
+          const notes = parseChordToNotes(chord);
+          synth.triggerAttackRelease(notes, "2n", time);
+          setPlayingIndex(index);
+          index = (index + 1) % cp.chords.length;
+        },
+        cp.chords.map((_, i) => i),
+        "1n"
+      );
+      seqRef.current = seq;
 
-    setIsPlaying(true);
-    setPlayingIndex(0);
+      setIsPlaying(true);
+      setPlayingIndex(0);
 
-    seq.start(0);
-    Tone.getTransport().start();
+      seq.start(0);
+      Tone.getTransport().start();
+    } catch (err) {
+      console.error("[ChordPlayback] playback failed:", err);
+      stopPlayback();
+    }
   }
 
   async function downloadMidi() {
