@@ -35,3 +35,6 @@ songflow-project-brief.*
 
 # Generated MIDI exports
 exports/
+
+# OMC session state (ephemeral)
+.omc/state/
