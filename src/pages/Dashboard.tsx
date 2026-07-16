@@ -99,32 +99,18 @@ function AlbumCard({
   );
 }
 
-function getOnboardingCompleted(): boolean {
-  try {
-    return localStorage.getItem("songflow.onboarding.completed") === "1";
-  } catch {
-    return false;
-  }
-}
-
 export function Dashboard() {
   const albums = useAlbumStore((s) => s.albums);
   const tracks = useAlbumStore((s) => s.tracks);
   const deleteAlbum = useAlbumStore((s) => s.deleteAlbum);
   const isLoaded = useAlbumStore((s) => s.isLoaded);
   const navigate = useNavigate();
-  const [onboardingCompleted, setOnboardingCompleted] = useState(getOnboardingCompleted);
 
   useEffect(() => {
     if (!isLoaded) {
       useAlbumStore.getState().init();
     }
   }, [isLoaded]);
-
-  // Re-read on mount so returning from the /guided flow reflects the latest state.
-  useEffect(() => {
-    setOnboardingCompleted(getOnboardingCompleted());
-  }, []);
 
   return (
     <div className="flex h-full flex-col gap-6 p-6">
@@ -148,31 +134,12 @@ export function Dashboard() {
             <div>
               <p className="text-sm font-medium">No albums yet</p>
               <p className="mt-1 text-xs text-muted-foreground">
-                처음이라면 가이드 샘플로 SongFlow를 체험해보세요.
+                Claude Code 스킬로 앨범을 만들면 여기에 표시돼요.
               </p>
             </div>
-            {!onboardingCompleted ? (
-              <div className="flex flex-col items-center gap-2 w-full">
-                <Button onClick={() => navigate("/guided")}>
-                  🎵 가이드 샘플로 시작하기
-                </Button>
-                <p className="text-xs text-muted-foreground">
-                  또는 Claude Code 스킬로 앨범을 가져오세요.
-                </p>
-              </div>
-            ) : (
-              <div className="flex flex-col items-center gap-2 w-full">
-                <p className="text-xs text-muted-foreground">
-                  Claude Code 스킬로 앨범을 가져오면 여기에 표시돼요.
-                </p>
-                <button
-                  className="text-xs text-muted-foreground underline-offset-2 hover:underline"
-                  onClick={() => navigate("/guided")}
-                >
-                  가이드 다시 보기
-                </button>
-              </div>
-            )}
+            <Button variant="outline" size="sm" onClick={() => navigate("/guide")}>
+              사용 방법 보기
+            </Button>
           </div>
         </div>
       ) : (

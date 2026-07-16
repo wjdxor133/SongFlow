@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { Check, Copy } from "lucide-react";
 import {
   Card,
@@ -8,7 +7,6 @@ import {
   CardHeader,
   CardTitle,
 } from "../components/ui/card";
-import { Button } from "../components/ui/button";
 
 function CodeBlock({ code }: { code: string }) {
   const [copied, setCopied] = useState(false);
@@ -130,7 +128,6 @@ const workflowSteps = [
 ];
 
 export function Guide() {
-  const navigate = useNavigate();
 
   return (
     <div className="flex h-full flex-col gap-8 p-6 overflow-auto">
@@ -323,19 +320,6 @@ export function Guide() {
           </CardContent>
         </Card>
 
-        <div className="flex flex-col gap-2">
-          <p className="text-xs text-muted-foreground">
-            처음이라면 가이드 샘플로 SongFlow를 체험해보세요.
-          </p>
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-fit"
-            onClick={() => navigate("/guided")}
-          >
-            🎵 가이드 샘플 보기
-          </Button>
-        </div>
       </section>
     </div>
   );
