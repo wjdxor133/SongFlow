@@ -3,8 +3,7 @@ import { AppShell } from "./layouts/AppShell";
 import { Dashboard } from "./pages/Dashboard";
 import { AlbumDetail } from "./pages/AlbumDetail";
 import { TrackDetail } from "./pages/TrackDetail";
-import { Settings } from "./pages/Settings";
-import { GuidedSample } from "./pages/GuidedSample";
+import { Guide } from "./pages/Guide";
 
 function App() {
   return (
@@ -14,8 +13,7 @@ function App() {
           <Route index element={<Dashboard />} />
           <Route path="albums/:albumId" element={<AlbumDetail />} />
           <Route path="albums/:albumId/tracks/:trackId" element={<TrackDetail />} />
-          <Route path="settings" element={<Settings />} />
-          <Route path="guided" element={<GuidedSample />} />
+          <Route path="guide" element={<Guide />} />
         </Route>
       </Routes>
     </BrowserRouter>

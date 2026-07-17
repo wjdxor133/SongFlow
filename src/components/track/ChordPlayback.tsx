@@ -57,7 +57,7 @@ function chordColor(chord: string) {
 }
 
 // Module-level "active player" registry: ensures only ONE chord card plays at a
-// time across ALL ChordPlayback instances (TrackDetail page + /guided page),
+// time across ALL ChordPlayback instances (모든 ChordPlayback 인스턴스),
 // since every instance shares the global Tone.getTransport() singleton.
 let activeStop: (() => void) | null = null;
 
