@@ -39,16 +39,23 @@ description: SongFlow 트랙 데이터(BPM/키/코드 진행/송폼)로 Ableton 
 1. `set_tempo` — SongFlow 트랙 BPM
 2. 트랙 생성: Drums / Bass / Chords / Pads / Topline / Vocal
    (`create_midi_track` index -1 → 응답의 index 기억 → `set_track_name`)
-3. 섹션별 MIDI 배치 — 섹션마다:
-   a. 코드 진행을 노트로 변환: export_chord_midi 응답의 `perChord`(sym/bass/chord) +
-      `bars`/`barsPerChord`/`repeat`를 결합해 마디 오프셋 재계산 (perChord는 1회분·타이밍 없음 주의)
-   b. Chords 트랙: `create_clip`(길이 = 섹션 마디×4비트) → `add_notes_to_clip`(보이싱, dur=코드당 비트)
+3. **송폼 레이아웃 계산 (단일 진리원천 — 손으로 마디/오프셋 재계산 금지)**:
+   SongFlow MCP `export_songform_layout` 을 1단계에서 확인한 섹션 순서·마디 수로 **한 번** 호출:
+   입력 `{ sections: [{name, bars}, …], bpm, timeSignature(기본 "4/4") }` →
+   출력 `sections[].{startBeat, lengthBeats, startBar, lengthBars, index}` + `totalBeats`.
+   이후 모든 배치는 이 응답의 `startBeat`/`lengthBeats` 값을 **그대로** 사용한다
+   (startBeat은 0-base 절대 Arrangement 타임, 첫 섹션=0 → destination_time·locator time과 동일 단위).
+   세 트랙(Chords/Bass/Pads)은 각자 재계산하지 말고 **같은 섹션의 동일 startBeat** 을 공유한다.
+4. 섹션별 MIDI 배치 — 각 섹션의 layout(위 응답) 값을 사용해 섹션마다:
+   a. 코드 진행을 노트로 변환: export_chord_midi 응답의 `perChord`(sym/bass/chord)로 보이싱 확보
+      (perChord는 1회분·타이밍 없음 — 절대 타이밍은 layout의 `startBeat`/`lengthBeats`가 담당)
+   b. Chords 트랙: `create_clip`(길이 = 해당 섹션 `lengthBeats`) → `add_notes_to_clip`(보이싱, dur=코드당 비트)
       → `set_clip_name`("Verse" 등 섹션명)
    c. Bass 트랙: 루트 온음표(perChord.bass, 코드당 1노트)
-   d. Pads 트랙: 코드 노트 서스테인(섹션 전체 길이)
-   e. `duplicate_session_clip_to_arrangement`(destination_time = 섹션 시작 beat)
-   f. `create_locator`(time = 섹션 시작 beat, name = 섹션명)
-4. Session View 슬롯의 작업용 클립은 남겨둠 (오너는 Arrangement에서 작업 — Session 줄은 작업대)
+   d. Pads 트랙: 코드 노트 서스테인(섹션 전체 길이 = `lengthBeats`)
+   e. `duplicate_session_clip_to_arrangement`(destination_time = 해당 섹션 `startBeat`)
+   f. `create_locator`(time = 해당 섹션 `startBeat`, name = 섹션명)
+5. Session View 슬롯의 작업용 클립은 남겨둠 (오너는 Arrangement에서 작업 — Session 줄은 작업대)
 
 ### 4단계: 검증 + 마무리
 1. `get_arrangement_clips`(각 트랙) + `get_locators`로 배치 리드백 검증 — 섹션 수/시작 비트 일치 확인
