@@ -371,6 +371,31 @@ const TOOLS = [
       required: ["trackId"],
     },
   },
+  {
+    name: "export_songform_layout",
+    description:
+      "Compute the deterministic bar/beat layout for an ordered songform. Given a list of sections (name + bar length), a bpm and an optional time signature, returns each section's absolute start position and length in both bars and beats. This is the single source of truth for arrangement placement: feed startBeat straight into duplicate_session_clip_to_arrangement (destination_time) and create_locator (time), and lengthBeats into clip length — no manual offset re-derivation. startBeat is 0-based absolute arrangement time (first section = 0); startBar is 1-based (Ableton display convention, first section = bar 1). Beat math is pure integer (bars × beatsPerBar) so cumulative sums never drift.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        sections: {
+          type: "array",
+          description: "Ordered songform sections. Each { name, bars } — bars is the section length in bars (positive integer).",
+          items: {
+            type: "object",
+            properties: {
+              name: { type: "string" },
+              bars: { type: "number" },
+            },
+            required: ["name", "bars"],
+          },
+        },
+        bpm: { type: "number", description: "Tempo in BPM (echoed back for convenience; does not affect bar/beat math)" },
+        timeSignature: { type: "string", description: "e.g. \"4/4\" (default), \"3/4\". Only x/4 signatures are supported; anything else errors." },
+      },
+      required: ["sections", "bpm"],
+    },
+  },
 ] as const;
 
 // ─── Tool handlers ────────────────────────────────────────────────────────────
@@ -879,6 +904,68 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               bars: chords.length * repeat * barsPerChord,
               middleC: "C4 = MIDI 60",
               notes: result.perChord,
+            }, null, 2),
+          }],
+        };
+      }
+
+      case "export_songform_layout": {
+        // Indexing convention (kept consistent with scripts/bass-song-sections.py, which uses
+        // bar_index*4 as 0-based beats): startBeat is 0-based absolute arrangement time — the
+        // first section starts at beat 0 — matching AbletonMCP destination_time / locator time.
+        // startBar is 1-based (Ableton's bar ruler shows the first bar as "1").
+        // All beat math is pure integer (bars × beatsPerBar) so the cumulative sum never drifts.
+        const rawSections = Array.isArray(a.sections) ? (a.sections as unknown[]) : [];
+        if (rawSections.length === 0) {
+          return { content: [{ type: "text", text: "sections must be a non-empty array of { name, bars }" }], isError: true };
+        }
+
+        // Parse time signature — only x/4 is supported; anything else errors rather than assuming 4/4.
+        const tsRaw = a.timeSignature !== undefined ? String(a.timeSignature) : "4/4";
+        const tsMatch = /^(\d+)\s*\/\s*(\d+)$/.exec(tsRaw.trim());
+        if (!tsMatch) {
+          return { content: [{ type: "text", text: `time signature 형식 인식 실패: '${tsRaw}' (예: "4/4")` }], isError: true };
+        }
+        const numerator = Number(tsMatch[1]);
+        const denominator = Number(tsMatch[2]);
+        if (denominator !== 4) {
+          return { content: [{ type: "text", text: `지원하지 않는 time signature: '${tsRaw}' — x/4만 지원합니다 (denominator=${denominator})` }], isError: true };
+        }
+        if (!Number.isInteger(numerator) || numerator < 1) {
+          return { content: [{ type: "text", text: `time signature numerator가 올바르지 않습니다: '${tsRaw}'` }], isError: true };
+        }
+        const beatsPerBar = numerator; // beats per bar = numerator for x/4 signatures
+
+        const sections: Array<{ name: string; index: number; startBar: number; startBeat: number; lengthBars: number; lengthBeats: number }> = [];
+        let cumulativeBars = 0; // running sum of bars before the current section
+        for (let i = 0; i < rawSections.length; i++) {
+          const s = rawSections[i] as Record<string, unknown>;
+          const name = s.name !== undefined ? String(s.name) : "";
+          const bars = Number(s.bars);
+          if (!Number.isInteger(bars) || bars < 1) {
+            return { content: [{ type: "text", text: `sections[${i}] ("${name}") bars가 양의 정수가 아닙니다: ${String(s.bars)}` }], isError: true };
+          }
+          sections.push({
+            name,
+            index: i,
+            startBar: cumulativeBars + 1,           // 1-based (Ableton display)
+            startBeat: cumulativeBars * beatsPerBar, // 0-based absolute arrangement time
+            lengthBars: bars,
+            lengthBeats: bars * beatsPerBar,
+          });
+          cumulativeBars += bars;
+        }
+
+        return {
+          content: [{
+            type: "text",
+            text: JSON.stringify({
+              sections,
+              totalBars: cumulativeBars,
+              totalBeats: cumulativeBars * beatsPerBar,
+              beatsPerBar,
+              timeSignature: `${numerator}/${denominator}`,
+              bpm: Number(a.bpm),
             }, null, 2),
           }],
         };
