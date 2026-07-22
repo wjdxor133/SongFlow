@@ -46,6 +46,8 @@ python3 .claude/skills/lyrics-from-reference/scripts/syllable_count.py verify /t
 
 **2. Suno style 텍스트** — **영어, 간결하게**: ~500자 키워드 나열 (Suno 1000자 제한; **긴 산문 금지**). 장르/무드/프로덕션 + BPM + 키 + 아래 [보컬 원칙]을 키워드로. **핵심 스타일 태그 5~8개 유지**(4개 미만은 밋밋, 10개 초과는 뒤쪽 태그가 무시됨). ⚠️ 설정값·한국어를 style에 섞지 않음(설정은 5번 분리).
    - **보컬 성별**은 style에 키워드로(예: `clear female lead vocal`), 캐릭터 큐는 가사의 `[Vocals: …]` 태그로. Suno UI의 Male/Female 버튼은 쓰지 않는다(버튼은 보컬 처리에 하드락을 걸어 멜로디 표현력·자연스러움을 떨어뜨린다).
+   - **AI 티 방지 네거티브 구문**(style에 항상 포함): `no [element]`가 가장 안정적·문자 효율적 — `dry vocal, less reverb, one clean lead, natural voice, only the written lyrics, no ad-libs, no runs, no autotune`. 긍정 서술(`natural voice, radio-ready`)과 반드시 짝지어 넣는다. 이 네거티브는 5번 excludeStyles와 **중복 배치**해 이중으로 누른다.
+   - **치찰음(sibilance)은 프롬프트로 완화만 — 완전 해결은 DAW 디에싱**: style에 `warm vocal tone, smooth consonants, no harsh sibilance`를 넣고 **과도한 bright/crisp 키워드는 자제**한다. 단 Suno가 금속성 치찰음을 구워 넣으므로 최종 제거는 바운스 후 디에서로(여성 6-8kHz / 남성 5-7kHz, 4-7dB) — 마무리 안내에 한 줄 언급.
 
 **3~6. MCP 기록 (순서대로)**
 1. `list_albums` → 없으면 `create_album { title, genre, concept }`
@@ -72,7 +74,7 @@ python3 .claude/skills/reference-to-suno/chords-to-midi.py \
 ## 보컬·생성 원칙 (실전 학습 — style/설정에 반영)
 - **자연스러움 > 파워**: 억지 belting은 **AI 티**가 난다. 에너지는 **리듬·그루브·아티큘레이션**(펀치·바운시·싱코페이션)에서, 볼륨에서가 아니라.
 - **보컬은 돋보이게 + 밝은 고음역**으로 (음이 낮으면 처진다). 매끄럽게(smooth/legato) 늘이면 처지니 **또박또박 끊어** 부르게.
-- **추임새 금지**: style에 "one clean lead, only the written lyrics, no ad-libs/breaths/runs" 명시 + `weirdness` 낮게. 남으면 DAW 컷.
+- **추임새 금지 (AI 티 최대 원인)**: 3중으로 누른다 — ① excludeStyles(5번)에 `ad-libs, breaths, runs, riffs, vocal chops` ② style에 `one clean lead, only the written lyrics, no ad-libs, no runs` ③ `weirdness` 낮게. 그래도 남으면 DAW 컷.
 - **Weirdness 트레이드오프**: 높이면 멜로디 독특·표현↑ **이자 추임새↑**; 낮추면 클린·이자 밋밋. 기본 ~20, 독특한 멜로디 원하면 35~45로 올리고 추임새는 DAW 컷.
 - **반주는 가볍게(추출용)** — 보컬이 돋보이게. 단 코러스 임팩트는 **풀 드롭 + 보컬 더블/화음(같은 가사)** 으로 (belting 아님).
 - **여러 번 생성해 고른다** — Suno 생성 편차가 크다. 프롬프트로 방향만, 마지막 10%는 생성 비교 + DAW.

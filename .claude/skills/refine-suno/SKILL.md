@@ -29,6 +29,9 @@ description: Suno로 곡을 뽑아 들어본 뒤 "어디가 별로였는지"를 
 | 섹션 다이내믹 약함(빌드업·대비) | style에 섹션별 지시(VERSE 인티메이트 / PRE-CHORUS build-up / CHORUS big anthemic) + 가사 섹션 태그에 연출 큐 `(build up)`, `(big, full energy)` 추가 |
 | 후렴 약함 | style에 "big anthemic chorus, stacked vocal harmonies, wide, hook hitting hard" + `[Chorus] (big, anthemic, full energy)` |
 | 멜로디가 밋밋·변화 없음·안 늘어남 | 다이내믹 지점의 섹션 태그에 멜로디 곡선 큐 부착: 빌드업 `[Build-up dynamics]`/`[Ascending progression]`, 정점 `[Vocal expansion]`, 후반 리프레시 `[Bridge modulation]`/`[Key shift cue]`/`[Half-step change]`, 훅 변형 `[Varied repetition]`/`[Motif transformation]`. 후렴 반복 태그·가사는 동일 유지(멜로디 반복 유도) |
+| 추임새·애드립 거슬림(oh/yeah/whoa, 숨소리, 런) | 3중 압박: `excludeStyles`에 `ad-libs, breaths, runs, riffs, vocal chops, background vocals` 추가 + style에 `one clean lead, only the written lyrics, no ad-libs, no runs` + `weirdness` ↓(→10~15). 그래도 남으면 DAW에서 해당 구간 컷 안내 |
+| 치찰음(sibilance)·거친 자음 쏨 | style에 `warm vocal tone, smooth consonants, no harsh sibilance` 추가 + 과도한 `bright/crisp/airy` 키워드 제거. **프롬프트로는 완화만** — 완전 제거는 바운스 후 DAW 디에서(여성 6-8kHz / 남성 5-7kHz, 4-7dB)로 마무리 안내 |
+| AI 티 남·부자연스러움 | style에 네거티브 구문 `dry vocal, natural voice, one clean lead, no autotune, no pitch correction` + `excludeStyles`에 `autotune, pitch correction` + `weirdness`/`styleInfluence` 과하지 않게 |
 | 보컬 성별/캐릭터 어긋남 | style에 산문으로(`clear female lead vocal`) + 가사 `[Vocals: …]` 태그로 지정. Suno UI Male/Female 버튼은 쓰지 않도록 안내(하드락→멜로디 표현력 저하) |
 | 특정 악기 보컬과 안 맞음 | style에 "vocal locks to the <악기> rhythm" 식으로 명시 |
 | 멜로디·플로우 어색 | 가사 음절/섹션 미세 조정 — **단, 원곡 음절 일치를 유지**(줄별 음절 수 재검산) |
