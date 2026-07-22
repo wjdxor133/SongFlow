@@ -25,13 +25,21 @@ description: 레퍼런스 곡 하나로 Suno에 바로 쓸 트랙을 만든다. 
 **Q3 "원곡 가사"** — 붙여넣기 요청 전에 먼저 **자동 추출을 시도**한다:
 - **가사 자동 추출**: `insane-search` 스킬로 가사 사이트를 뚫는다. WAF/CAPTCHA(letras·genius·bugs·melon 등)가 흔하지만 **Jina Reader**(`curl -s "https://r.jina.ai/<가사URL>"`)나 engine(`python3 -m engine <URL>`)으로 종종 관통된다. genius가 막히면 letras.com/namu.wiki/벅스 등 다른 소스로 폴백. 여러 소스 병렬 시도.
 - 추출 성공 시 사용자에게 섹션 구조로 정리해 **확인만** 받는다(재붙여넣기 불필요). 전 소스 실패 시에만 "원곡 가사를 붙여넣어 주세요"로 수동 요청.
-- 섹션 라벨 있으면 사용, 없으면 송폼으로 나눔. **줄별 음절 수**를 센다(한국어=글자 수, 영어=발음 음절).
+- 섹션 라벨 있으면 사용, 없으면 송폼으로 나눔. **줄별 음절 수**를 센다 — 영어 줄은 눈대중 금지, 결정론적 카운터로 센다(LLM 영어 음절 정확도 ~23-55%). 한국어=글자 수.
+  ```bash
+  python3 .claude/skills/lyrics-from-reference/scripts/syllable_count.py count /tmp/ref_lyrics.txt
+  ```
+  섹션별 줄 음절 배열을 `/tmp/targets.json`으로 저장한다(예: `{"Verse 1":[8,6,8,6],"Chorus":[7,7,5,7]}`) — 아래 가사 생성의 검증 타깃. 카운트 후 레퍼런스 텍스트는 폐기(음절 수만 보관, 저작권). `pronouncing` 미설치 시 폴백 동작하나 `pip install pronouncing` 권장(`backend` 필드로 확인).
 
 **Q4 "어떤 컨셉·언어로?"** (예: "강렬한 첫만남, 영어")
 
 ## 생성 & 기록
 
-**1. 음절 일치 가사** — Q3 줄별 음절 수에 맞춰 Q4 컨셉/언어로 작성. 섹션 구조·후렴 위치 보존. **생성 후 줄별 음절 수 재검산.**
+**1. 음절 일치 가사** — Q3의 `/tmp/targets.json`에 맞춰 Q4 컨셉/언어로 작성. 섹션 구조·후렴 위치 보존. **영어 줄은 눈대중 재검산 금지 — 결정론적 검증+교정 루프로 확정한다**:
+```bash
+python3 .claude/skills/lyrics-from-reference/scripts/syllable_count.py verify /tmp/gen_lyrics.txt /tmp/targets.json
+```
+`mismatches`(줄별 target/got)를 피드백으로 **해당 줄만** 목표 음절에 맞게 다시 써서 `per_line_match_rate == 1.0`이 될 때까지 반복(최대 ~15회). 미달 시 최선본을 쓰되 최종 rate를 9번 마무리에 명시. 한국어/혼용 줄은 이 루프에서 제외하고 줄 수·밀도만 맞춘다.
 - **멜로디가 사는 가사**: 한 단어(예: "high")를 과반복하면 멜로디가 납작해진다 → **짧은 훅 + 아치형으로 흐르는 라인**을 섞고, 늘여 부르는 음(줄 끝/훅)엔 **열린 모음**(you/stay/way/high/oh).
 - **멜로디 곡선 메타태그**(다이내믹이 바뀌는 섹션 태그에 선택적으로 부착): `[Ascending progression]`·`[Build-up dynamics]`(빌드업), `[Descending melody]`(릴리스), `[Bridge modulation]`·`[Half-step change]`·`[Key shift cue]`(브릿지 전조로 후반 리프레시), `[Vocal expansion]`(음역 확장), `[Varied repetition]`·`[Motif transformation]`(훅 변형으로 지루함 방지). 브래킷은 가창되지 않는 구조/메타 큐다.
 - **DAW 정렬**: inst가 있으면 섹션 줄 수를 마디 맵에 맞춘다(8마디≈4~8줄, 빌드/브레이크 고려). 단 Suno는 정확한 마디로 안 떨어지니 최종 타이밍은 DAW 컴핑.
@@ -44,7 +52,7 @@ description: 레퍼런스 곡 하나로 Suno에 바로 쓸 트랙을 만든다. 
 2. `create_track { albumId, title, genre, bpm, key, concept, lyrics }` → `trackId` (`concept` 필수)
 3. `save_reference_brief { trackId, artist, songTitle, summary, genreTags, moodTags, productionTraits, confidence, disclaimer }`
 4. `save_agent_response { trackId, task:"generate_suno_prompts", rawText:"{\"style\":\"...\",\"lyrics\":\"...\"}" }` — 트랙당 프롬프트 1개 유지(서버가 교체)
-5. `save_suno_settings { trackId, weirdness, styleInfluence, audioInfluence?, excludeStyles? }` (excludeStyles = Suno Exclude Styles에 넣을 쉼표구분 회피 목록, 예: "ad-libs, breaths, runs, male vocals")
+5. `save_suno_settings { trackId, weirdness, styleInfluence, audioInfluence?, excludeStyles? }` (excludeStyles = Suno Exclude Styles에 넣을 쉼표구분 회피 목록). **클린 보컬 기본 세트**: `ad-libs, breaths, runs, riffs, vocal chops, background vocals, autotune, pitch correction` — 여기에 곡별 회피(예: `male vocals`)를 덧붙인다. AI 티의 최대 원인인 즉흥 추임새·오토튠을 여기서 1차 차단.
 6. `save_chord_progressions { trackId, progressions:[{name, chords, key, mode, bpm}, …] }` — 작업 키에 맞는 진행 5개
 7. `save_sound_keywords { trackId, drums, bass, melody, harmony, fx, vocal }` — 파트별 **샘플 검색 키워드**(Splice 등). 레퍼런스 프로덕션 특성에서 도출한 실제 검색어를 파트별 3~6개씩, 작업 키·BPM을 녹여 정확도를 높인다. 예: `drums:["pop rock drums 112","punchy live drums"]`, `harmony:["funk guitar loop Am","clean electric guitar"]`, `fx:["riser","vinyl foley"]`. 해당 없는 파트는 빈 배열.
 
@@ -72,7 +80,7 @@ python3 .claude/skills/reference-to-suno/chords-to-midi.py \
 
 ## 원칙
 - 질의문답 한 번에 하나씩. 키(Q2)부터 확인.
-- 음절 일치 핵심 — 재검산. 멜로디는 가사 컨투어로.
+- 음절 일치 핵심 — 영어 줄은 `lyrics-from-reference/scripts/syllable_count.py` verify 루프로 확정(눈대중 금지, `per_line_match_rate==1.0`까지). 멜로디는 가사 컨투어로.
 - 코드 진행은 **항상 DAW 표기(근음·보이싱·MIDI 번호) + .mid 출력**까지 함께 제공.
 - 산출물은 MCP로만 기록(데이터 파일 직접 편집 금지). 단 `.mid`는 `exports/`에 파일로 출력(데이터 파일 아님).
 - 화성학/이론 학습은 범위 밖(별도 스킬).
