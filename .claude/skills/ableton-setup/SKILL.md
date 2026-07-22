@@ -1,6 +1,6 @@
 ---
 name: ableton-setup
-description: SongFlow 트랙 데이터(BPM/키/코드 진행/송폼)로 Ableton Live 프로젝트를 작업 가능 상태로 자동 셋업한다. 백업 → 템포 → 트랙 생성 → 송폼대로 Arrangement 타임라인에 코드/베이스/패드 MIDI 초안 배치 + 섹션 로케이터 생성. "에이블톤 셋업", "작업 시작하자", "이 트랙 에이블톤에 깔아줘"에 사용. 결과물은 바운스 → Suno 업로드(Add Vocals)의 입력이 된다.
+description: SongFlow 트랙 데이터(BPM/키/코드 진행/송폼)로 Ableton Live 프로젝트를 작업 가능 상태로 자동 셋업한다. 백업 → 템포 → 트랙 생성 → 송폼대로 Arrangement 타임라인에 코드/베이스/패드/드럼 MIDI 초안 배치 + 섹션 로케이터 생성. "에이블톤 셋업", "작업 시작하자", "이 트랙 에이블톤에 깔아줘"에 사용. 결과물은 바운스 → Suno 업로드(Add Vocals)의 입력이 된다.
 ---
 
 # ableton-setup: SongFlow → Ableton 프로젝트 자동 셋업
