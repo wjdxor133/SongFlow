@@ -39,22 +39,31 @@ description: SongFlow 트랙 데이터(BPM/키/코드 진행/송폼)로 Ableton 
 1. `set_tempo` — SongFlow 트랙 BPM
 2. 트랙 생성: Drums / Bass / Chords / Pads / Topline / Vocal
    (`create_midi_track` index -1 → 응답의 index 기억 → `set_track_name`)
+   Drums 트랙은 생성 직후 `load_drum_kit`으로 킷 로드(실패해도 노트 배치는 진행 — 소리는 오너가 킷 올린 뒤)
 3. **송폼 레이아웃 계산 (단일 진리원천 — 손으로 마디/오프셋 재계산 금지)**:
    SongFlow MCP `export_songform_layout` 을 1단계에서 확인한 섹션 순서·마디 수로 **한 번** 호출:
    입력 `{ sections: [{name, bars}, …], bpm, timeSignature(기본 "4/4") }` →
    출력 `sections[].{startBeat, lengthBeats, startBar, lengthBars, index}` + `totalBeats`.
    이후 모든 배치는 이 응답의 `startBeat`/`lengthBeats` 값을 **그대로** 사용한다
    (startBeat은 0-base 절대 Arrangement 타임, 첫 섹션=0 → destination_time·locator time과 동일 단위).
-   세 트랙(Chords/Bass/Pads)은 각자 재계산하지 말고 **같은 섹션의 동일 startBeat** 을 공유한다.
-4. 섹션별 MIDI 배치 — 각 섹션의 layout(위 응답) 값을 사용해 섹션마다:
+   네 트랙(Chords/Bass/Pads/Drums)은 각자 재계산하지 말고 **같은 섹션의 동일 startBeat** 을 공유한다.
+3b. **드럼 노트 생성 (섹션 순서·마디 수를 layout과 동일하게, 한 번 호출)**:
+   `python3 scripts/drum-song-sections.py --bpm <BPM> --sections '<[{"name","bars"},…] JSON>' --out-json /tmp/sf_drums.json`
+   (섹션 목록은 3번 layout 입력과 **완전히 동일**하게 — index 순서가 layout과 1:1 매칭돼야 함.
+    energy는 섹션명으로 자동 매핑: chorus/hook/drop=high, pre/build/rise=build, 그 외=mid.
+    출력 `sections[].{index, name, length_beats, notes[]}` — 노트 start_time은 섹션 시작 기준 상대 beat.)
+4. 섹션별 MIDI 배치 — 각 섹션의 layout(3번 응답) 값을 사용해 섹션마다:
    a. 코드 진행을 노트로 변환: export_chord_midi 응답의 `perChord`(sym/bass/chord)로 보이싱 확보
       (perChord는 1회분·타이밍 없음 — 절대 타이밍은 layout의 `startBeat`/`lengthBeats`가 담당)
    b. Chords 트랙: `create_clip`(길이 = 해당 섹션 `lengthBeats`) → `add_notes_to_clip`(보이싱, dur=코드당 비트)
       → `set_clip_name`("Verse" 등 섹션명)
    c. Bass 트랙: 루트 온음표(perChord.bass, 코드당 1노트)
    d. Pads 트랙: 코드 노트 서스테인(섹션 전체 길이 = `lengthBeats`)
-   e. `duplicate_session_clip_to_arrangement`(destination_time = 해당 섹션 `startBeat`)
-   f. `create_locator`(time = 해당 섹션 `startBeat`, name = 섹션명)
+   e. Drums 트랙: 3b JSON에서 **동일 index** 섹션의 `notes`를 사용 →
+      `create_clip`(길이 = 해당 섹션 `lengthBeats`) → `add_notes_to_clip`(드럼 노트, start_time 그대로) → `set_clip_name`
+      (드럼 킷은 트랙 생성 시 `load_drum_kit`으로 미리 로드 — 없으면 노트만 배치되고 소리는 오너가 킷 올린 뒤 남)
+   f. `duplicate_session_clip_to_arrangement`(destination_time = 해당 섹션 `startBeat`) — 네 트랙 모두
+   g. `create_locator`(time = 해당 섹션 `startBeat`, name = 섹션명)
 5. Session View 슬롯의 작업용 클립은 남겨둠 (오너는 Arrangement에서 작업 — Session 줄은 작업대)
 
 ### 4단계: 검증 + 마무리
@@ -74,4 +83,5 @@ description: SongFlow 트랙 데이터(BPM/키/코드 진행/송폼)로 Ableton 
 - 실제 작업 프로젝트(스파이크 폴더 밖)에는 오너의 명시적 허락 없이 쓰기 금지
 - 오디오 익스포트는 자동화 불가(전 MCP 서버 미지원) — 바운스는 오너가 수동 1클릭 (⇧⌘R)
 - Suno 업로드용 바운스에는 샘플 오디오 포함 금지(핑거프린팅) — MIDI 파트만
-- Drums 트랙은 빈 트랙으로 생성만 (초안은 GroovePattern 스키마 정의 후 — 백로그)
+- Drums 트랙은 `drum-song-sections.py`로 섹션별 초안 배치 (energy 자동 매핑, 4/4 가정) —
+  퍼커션(Perc) 트랙·별도 패턴은 아직 백로그(오너 수동)
